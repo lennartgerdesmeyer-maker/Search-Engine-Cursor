@@ -42,6 +42,7 @@ class EmbeddingGenerator:
         self.embeddings_path = DATA_DIR / "embeddings.npy"
         self.pmid_index_path = DATA_DIR / "pmid_index.json"
         self.checkpoint_path = DATA_DIR / "embedding_checkpoint.json"
+        self.embedding_mean_path = DATA_DIR / "embedding_mean.npy"
         
         logger.info(f"Using device: {self.device} (forced CPU mode to avoid MPS issues)")
     
@@ -160,6 +161,14 @@ class EmbeddingGenerator:
         
         if len(remaining_df) == 0:
             logger.info("All embeddings already generated!")
+            # Still center embeddings if they exist (in case they weren't centered before)
+            if self.embeddings_path.exists():
+                logger.info("Checking if embeddings need centering...")
+                if not self.embedding_mean_path.exists():
+                    logger.info("Mean file not found, centering embeddings...")
+                    self._center_and_save_embeddings()
+                else:
+                    logger.info("Embeddings already centered (mean file exists)")
             return
         
         logger.info(f"Generating embeddings for {len(remaining_df):,} articles...")
@@ -195,6 +204,10 @@ class EmbeddingGenerator:
             existing_embeddings, existing_pmids
         )
         
+        # Center all embeddings and save the mean
+        logger.info("Centering embeddings to improve similarity differentiation...")
+        self._center_and_save_embeddings()
+        
         logger.info("=" * 60)
         logger.info(f"EMBEDDING GENERATION COMPLETE")
         logger.info(f"Total: {len(existing_pmids) + len(all_new_pmids):,}")
@@ -215,6 +228,43 @@ class EmbeddingGenerator:
             np.save(self.embeddings_path, all_embeddings)
             with open(self.pmid_index_path, 'w') as f:
                 json.dump(all_pmids, f)
+    
+    def _center_and_save_embeddings(self):
+        """Center all embeddings by subtracting the mean and renormalize"""
+        if not self.embeddings_path.exists():
+            logger.warning("No embeddings file found to center")
+            return
+        
+        logger.info("Loading embeddings for centering...")
+        embeddings = np.load(self.embeddings_path)
+        logger.info(f"Loaded {len(embeddings):,} embeddings")
+        
+        # Calculate mean BEFORE centering
+        logger.info("Calculating embedding mean...")
+        embedding_mean = np.mean(embeddings, axis=0)
+        logger.info(f"Mean vector shape: {embedding_mean.shape}")
+        
+        # Center embeddings: subtract mean from each embedding
+        logger.info("Centering embeddings (subtracting mean)...")
+        centered_embeddings = embeddings - embedding_mean
+        
+        # Renormalize each centered embedding
+        logger.info("Renormalizing centered embeddings...")
+        norms = np.linalg.norm(centered_embeddings, axis=1, keepdims=True)
+        # Avoid division by zero
+        norms[norms == 0] = 1.0
+        centered_embeddings = centered_embeddings / norms
+        
+        # Save centered embeddings (overwrite original)
+        logger.info("Saving centered embeddings...")
+        np.save(self.embeddings_path, centered_embeddings)
+        
+        # Save the mean vector
+        logger.info("Saving embedding mean vector...")
+        np.save(self.embedding_mean_path, embedding_mean)
+        
+        logger.info(f"✅ Centered {len(centered_embeddings):,} embeddings")
+        logger.info(f"✅ Saved mean vector: shape {embedding_mean.shape}")
     
     def get_stats(self) -> dict:
         """Get embedding statistics"""

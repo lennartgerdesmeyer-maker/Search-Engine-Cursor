@@ -26,29 +26,22 @@ def main():
     logger.info("=" * 70)
     logger.info("")
     
-    # Step 1: Generate embeddings
-    logger.info("Step 1: Generating embeddings...")
+    # Step 1: Generate embeddings (includes centering and mean calculation)
+    logger.info("Step 1: Generating and centering embeddings...")
     generator = EmbeddingGenerator()
     generator.generate_all_embeddings(resume=True)
+    logger.info("✅ Embeddings generated, centered, and mean vector saved")
     logger.info("")
     
-    # Step 2: Calculate mean
-    logger.info("Step 2: Calculating embedding mean...")
-    embeddings = np.load(DATA_DIR / "embeddings.npy")
-    embedding_mean = np.mean(embeddings, axis=0)
-    np.save(DATA_DIR / "embedding_mean.npy", embedding_mean)
-    logger.info(f"✅ Mean vector saved: shape {embedding_mean.shape}")
-    logger.info("")
-    
-    # Step 3: Build FAISS index
-    logger.info("Step 3: Building FAISS index...")
+    # Step 2: Build FAISS index (uses already-centered embeddings)
+    logger.info("Step 2: Building FAISS index...")
     vector_index = VectorIndex()
     vector_index.build_index()
     logger.info("✅ FAISS index built")
     logger.info("")
     
-    # Step 4: Verify
-    logger.info("Step 4: Verification...")
+    # Step 3: Verify
+    logger.info("Step 3: Verification...")
     with open(DATA_DIR / "pmid_index.json", 'r') as f:
         pmids = json.load(f)
     

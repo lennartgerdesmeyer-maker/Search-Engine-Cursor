@@ -87,20 +87,22 @@ class SemanticSearchEngine:
             embedding = embedding / norm
         
         # Center and renormalize using the embedding mean
-        # DISABLED - Query centering disabled to match how document embeddings are stored
-        # Document embeddings are not centered, so queries should not be centered either
-        # if self.embedding_mean is not None:
-        #     embedding_before_center = embedding.copy()
-        #     similarity_to_mean = np.dot(embedding, self.embedding_mean)
-        #     logger.info(f"Query centering: similarity to mean before centering: {similarity_to_mean:.4f}")
-        #     
-        #     embedding = embedding - self.embedding_mean
-        #     norm = np.linalg.norm(embedding)
-        #     if norm > 0:
-        #         embedding = embedding / norm
-        #     logger.debug(f"Query embedding after centering - norm: {norm:.4f}, "
-        #                 f"min: {embedding.min():.4f}, max: {embedding.max():.4f}, mean: {embedding.mean():.4f}")
-        #     logger.info("Query centering enabled - improves differentiation between similar queries")
+        # ENABLED - Query centering matches how document embeddings are stored
+        # Both queries and documents are centered to remove common "medical domain" component
+        # This improves similarity score differentiation
+        if self.embedding_mean is not None:
+            embedding_before_center = embedding.copy()
+            similarity_to_mean = np.dot(embedding, self.embedding_mean)
+            logger.debug(f"Query centering: similarity to mean before centering: {similarity_to_mean:.4f}")
+            
+            # Center query embedding (subtract mean)
+            embedding = embedding - self.embedding_mean
+            norm = np.linalg.norm(embedding)
+            if norm > 0:
+                embedding = embedding / norm
+            logger.debug(f"Query embedding after centering - norm: {norm:.4f}, "
+                        f"min: {embedding.min():.4f}, max: {embedding.max():.4f}, mean: {embedding.mean():.4f}")
+            logger.debug("Query centering enabled - matches centered document embeddings")
         
         logger.debug(f"Final query embedding - norm: {np.linalg.norm(embedding):.4f}, "
                     f"min: {embedding.min():.4f}, max: {embedding.max():.4f}, mean: {embedding.mean():.4f}")
