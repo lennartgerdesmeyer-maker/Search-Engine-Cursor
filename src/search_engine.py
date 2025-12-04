@@ -86,22 +86,14 @@ class SemanticSearchEngine:
         if norm > 0:
             embedding = embedding / norm
         
-        # Center and renormalize using the embedding mean
-        # TEMPORARILY DISABLED FOR TESTING - This may be causing queries to collapse
-        # TODO: Re-enable after testing if not the cause
+        # Query centering is DISABLED
+        # Reason: Document embeddings in the FAISS index are NOT centered, only normalized
+        # Centering queries while keeping documents non-centered creates a mismatch that
+        # drastically reduces similarity scores (26% instead of 80%+ for exact matches)
+        # To use query centering, the entire FAISS index would need to be rebuilt with centered embeddings
         if self.embedding_mean is not None:
-            embedding_before_center = embedding.copy()
             similarity_to_mean = np.dot(embedding, self.embedding_mean)
-            logger.info(f"Query centering: similarity to mean before centering: {similarity_to_mean:.4f}")
-            
-            # Re-enabled query centering to improve result differentiation
-            embedding = embedding - self.embedding_mean
-            norm = np.linalg.norm(embedding)
-            if norm > 0:
-                embedding = embedding / norm
-            logger.debug(f"Query embedding after centering - norm: {norm:.4f}, "
-                        f"min: {embedding.min():.4f}, max: {embedding.max():.4f}, mean: {embedding.mean():.4f}")
-            logger.info("Query centering enabled - improves differentiation between similar queries")
+            logger.debug(f"Query similarity to corpus mean: {similarity_to_mean:.4f} (centering disabled)")
         
         logger.debug(f"Final query embedding - norm: {np.linalg.norm(embedding):.4f}, "
                     f"min: {embedding.min():.4f}, max: {embedding.max():.4f}, mean: {embedding.mean():.4f}")
