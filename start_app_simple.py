@@ -61,6 +61,16 @@ def main():
     # Change to project directory
     os.chdir(PROJECT_DIR)
     
+    # Add venv site-packages to Python path to ensure all packages are available
+    venv_lib = PROJECT_DIR / "venv" / "lib"
+    if venv_lib.exists():
+        # Find the Python version directory (e.g., python3.14)
+        python_dirs = [d for d in venv_lib.iterdir() if d.is_dir() and d.name.startswith('python')]
+        if python_dirs:
+            venv_site_packages = python_dirs[0] / "site-packages"
+            if venv_site_packages.exists():
+                sys.path.insert(0, str(venv_site_packages))
+    
     # Add project to Python path
     sys.path.insert(0, str(PROJECT_DIR))
     

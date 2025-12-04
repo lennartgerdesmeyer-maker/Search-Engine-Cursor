@@ -38,23 +38,30 @@ class EmbeddingGenerator:
     
     def __init__(self):
         self.model = None
-        self.device = "mps" if torch.backends.mps.is_available() else "cpu"
+        self.device = "cpu"  # Force CPU - MPS was causing model loading to hang
         self.embeddings_path = DATA_DIR / "embeddings.npy"
         self.pmid_index_path = DATA_DIR / "pmid_index.json"
         self.checkpoint_path = DATA_DIR / "embedding_checkpoint.json"
         
-        logger.info(f"Using device: {self.device}")
+        logger.info(f"Using device: {self.device} (forced CPU mode to avoid MPS issues)")
     
     def load_model(self):
         """Load the sentence transformer model"""
         if self.model is None:
             logger.info(f"Loading model: {EMBEDDING_MODEL}")
             logger.info("This may take a few minutes on first run...")
+            logger.info(f"Using device: {self.device}")
             
-            self.model = SentenceTransformer(EMBEDDING_MODEL)
-            self.model.to(self.device)
-            
-            logger.info("Model loaded successfully")
+            try:
+                # Force CPU mode explicitly
+                self.model = SentenceTransformer(EMBEDDING_MODEL, device='cpu')
+                # Model is already on CPU, no need to move
+                logger.info("Model loaded successfully on CPU")
+            except Exception as e:
+                logger.error(f"Failed to load model: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+                raise
     
     def get_articles_for_embedding(self) -> pd.DataFrame:
         """Get all articles for embedding (prefer abstracts, use titles if no abstract)"""
