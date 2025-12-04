@@ -82,7 +82,7 @@ def main():
     # Function to open browser after server is ready
     def wait_and_open_browser():
         """Wait for server to be ready, then open browser"""
-        max_wait = 30
+        max_wait = 120  # Increased to 2 minutes for large FAISS index loading
         waited = 0
         
         while waited < max_wait:
@@ -97,12 +97,15 @@ def main():
                 webbrowser.open(URL)
                 return
             
-            time.sleep(0.5)
-            waited += 0.5
-            if waited % 2 == 0:
+            time.sleep(1)
+            waited += 1
+            if waited % 5 == 0:
+                print(f"Waiting... ({waited}s/{max_wait}s)", end="", flush=True)
+            else:
                 print(".", end="", flush=True)
         
-        print("\n⚠ WARNING: Could not verify server is ready, but opening browser anyway...")
+        print(f"\n⚠ WARNING: Server not ready after {max_wait}s, but opening browser anyway...")
+        print("The server may still be loading the FAISS index. Please wait and refresh the page.")
         webbrowser.open(URL)
     
     # Start browser opener in background thread

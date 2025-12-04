@@ -42,11 +42,17 @@ class SemanticSearchEngine:
         self.db_path = METADATA_DB_PATH
         self.last_query_embedding = None  # Store for analysis
         self.embedding_mean = None  # Mean vector for centering
+        self._initialized = False  # Lazy initialization flag
+    
+    def _ensure_initialized(self):
+        """Lazy initialization - only load index and mean when actually needed"""
+        if self._initialized:
+            return
         
         try:
+            logger.info("Initializing search engine (loading FAISS index and mean vector)...")
             self.vector_index.build_index()
             # Load embedding mean for query centering
-            # This restores the working state after adding the custom paper
             mean_path = DATA_DIR / "embedding_mean.npy"
             if mean_path.exists():
                 self.embedding_mean = np.load(mean_path)
@@ -54,6 +60,8 @@ class SemanticSearchEngine:
             else:
                 logger.warning("Embedding mean not found - query centering disabled")
                 self.embedding_mean = None
+            self._initialized = True
+            logger.info("Search engine initialized successfully")
         except Exception as e:
             logger.error(f"Error building/loading vector index: {e}")
             import traceback
@@ -127,6 +135,30 @@ class SemanticSearchEngine:
         
         return metadata
     
+    def _ensure_initialized(self):
+        """Lazy initialization - only load index and mean when actually needed"""
+        if self._initialized:
+            return
+        
+        try:
+            logger.info("Initializing search engine (loading FAISS index and mean vector)...")
+            self.vector_index.build_index()
+            # Load embedding mean for query centering
+            mean_path = DATA_DIR / "embedding_mean.npy"
+            if mean_path.exists():
+                self.embedding_mean = np.load(mean_path)
+                logger.info("Loaded embedding mean for query centering")
+            else:
+                logger.warning("Embedding mean not found - query centering disabled")
+                self.embedding_mean = None
+            self._initialized = True
+            logger.info("Search engine initialized successfully")
+        except Exception as e:
+            logger.error(f"Error building/loading vector index: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            raise
+    
     def search(
         self,
         query: str,
@@ -156,6 +188,9 @@ class SemanticSearchEngine:
             faiss_candidates: Number of candidates to retrieve from FAISS when reranking
                              (should be > top_k when using reranker)
         """
+        # Lazy initialization - only load FAISS index when first search is performed
+        self._ensure_initialized()
+        
         start_time = datetime.now()
         
         # Log the query being searched
