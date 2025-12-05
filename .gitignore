@@ -1,0 +1,55 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Data files (large, should not be committed)
+data/
+*.npy
+*.bin
+*.db
+*.parquet
+*.json
+!package.json
+!package-lock.json
+
+# Logs
+logs/
+*.log
+
+# Exports
+exports/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Checkpoints and backups
+*_checkpoint.json
+*backup*
+*.lock
+*.tmp
+
+# Large model files (if downloaded)
+models/
+*.pth
+*.pt
+
+# Temporary files
+*.tmp
+*.temp

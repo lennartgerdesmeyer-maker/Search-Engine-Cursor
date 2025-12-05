@@ -1,0 +1,2623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semantic Search Engine - Foot & Ankle Literature</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            text-decoration: none;
+        }
+
+        .search-section {
+            padding: 30px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        textarea, input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus, input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .results-section {
+            padding: 30px;
+        }
+
+        .stats-bar {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .result-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .result-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .similarity-score {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .result-meta {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .result-abstract {
+            color: #555;
+            line-height: 1.6;
+            margin-top: 10px;
+        }
+
+        .result-abstract.collapsed {
+            max-height: 100px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .result-abstract.collapsed::after {
+            content: '...';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: #f8f9fa;
+            padding-left: 20px;
+        }
+
+        .toggle-abstract {
+            color: #667eea;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: inline-block;
+        }
+
+        .toggle-abstract:hover {
+            text-decoration: underline;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #dc3545;
+        }
+
+        .match-badge {
+            background: #28a745;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .no-results h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .advanced-options {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .advanced-toggle {
+            color: #667eea;
+            cursor: pointer;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        .advanced-content {
+            display: none;
+        }
+
+        .advanced-content.show {
+            display: block;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 0;
+            border: 1px solid #888;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 900px;
+        }
+
+        .modal-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px 8px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+        }
+
+        .close {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            opacity: 0.7;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .paper-check-result {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .paper-check-result.found {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+
+        .paper-check-result.not-found {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .paper-check-result h4 {
+            margin: 0 0 10px 0;
+        }
+
+        .paper-check-result .match-info {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .paper-check-result .database-info {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+
+        /* Screening Results Styles */
+        .filter-tab {
+            background: white;
+            border: 2px solid #667eea;
+            color: #667eea;
+            padding: 8px 16px;
+            margin-right: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .filter-tab:hover {
+            background: #e7f3ff;
+        }
+
+        .filter-tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .screening-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .screening-badge.included {
+            background: #28a745;
+            color: white;
+        }
+
+        .screening-badge.excluded {
+            background: #dc3545;
+            color: white;
+        }
+
+        .screening-badge.disagreement {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .screening-badge.uncertain {
+            background: #6c757d;
+            color: white;
+        }
+
+        .screening-badge.not-screened {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .screening-badge.supervisor {
+            border: 2px solid #667eea;
+            box-shadow: 0 0 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .llm-decision {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .llm-box {
+            padding: 12px;
+            border-radius: 6px;
+            border: 2px solid;
+        }
+
+        .llm-box.gpt4o {
+            border-color: #10a37f;
+            background: #f0fdf4;
+        }
+
+        .llm-box.gpt5mini {
+            border-color: #10a37f;
+            background: #f0fdf4;
+        }
+
+        .decision-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .decision-badge.include {
+            background: #28a745;
+            color: white;
+        }
+
+        .decision-badge.exclude {
+            background: #dc3545;
+            color: white;
+        }
+
+        .decision-badge.uncertain {
+            background: #6c757d;
+            color: white;
+        }
+
+        .confidence-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            margin-left: 8px;
+        }
+
+        .confidence-badge.high {
+            background: #28a745;
+            color: white;
+        }
+
+        .confidence-badge.medium {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .confidence-badge.low {
+            background: #dc3545;
+            color: white;
+        }
+
+        .screening-progress {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Semantic Search Engine</h1>
+            <p>Foot & Ankle Surgery Literature Database</p>
+            <a href="/semantic-search" class="nav-link">🚀 Semantic Search Engine (AI-Powered)</a>
+        </div>
+
+        <!-- AI Extraction Section -->
+        <div class="extraction-container" style="background: #f8f9fa; padding: 20px; border-bottom: 1px solid #e0e0e0;">
+            <h3 style="margin-top: 0; color: #333;">
+                🤖 AI-Powered Systematic Review Extraction
+            </h3>
+            <p style="color: #666; margin-bottom: 15px;">
+                Paste the full webpage content of a systematic review (including text, references, images, ads). 
+                The AI will extract key information and auto-fill the search form below.
+            </p>
+            
+            <!-- Step 1: Paste Text -->
+            <div class="extraction-step" style="margin-bottom: 20px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 8px;">
+                    Step 1: Paste Systematic Review Content
+                </label>
+                <textarea 
+                    id="systematic-review-input" 
+                    placeholder="Paste the entire systematic review webpage here (including all text, references, images, advertisements, etc.)&#10;&#10;Example: Copy everything from a PubMed article page, including abstract, full text, references section..."
+                    rows="8"
+                    style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 13px;"
+                ></textarea>
+                <div style="margin-top: 5px; font-size: 12px; color: #999;">
+                    Tip: Select all text on the webpage (Ctrl+A) and copy-paste here. The AI will filter out noise automatically.
+                </div>
+            </div>
+            
+            <!-- Step 2: Extract Button -->
+            <div class="extraction-step" style="margin-bottom: 20px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 8px;">
+                    Step 2: Extract Information
+                </label>
+                <button 
+                    onclick="extractSystematicReview()" 
+                    id="extract-button"
+                    type="button"
+                    style="background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 15px; font-weight: bold;"
+                >
+                    🔍 Extract & Auto-Fill
+                </button>
+                <script>
+                    // Ensure button is always enabled on page load
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const btn = document.getElementById('extract-button');
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.style.opacity = '1';
+                            btn.style.cursor = 'pointer';
+                        }
+                    });
+                </script>
+                <div id="extraction-status" style="margin-top: 12px; font-size: 14px;"></div>
+            </div>
+            
+            <!-- Step 3: Review Results -->
+            <div id="extraction-results" style="display: none; margin-top: 20px; padding: 15px; background: white; border-radius: 6px; border: 1px solid #ddd;">
+                <h4 style="margin-top: 0; color: #28a745;">✅ Extraction Complete</h4>
+                
+                <div id="extraction-summary" style="margin-bottom: 15px;"></div>
+                
+                <div id="extraction-warnings" style="display: none; margin-bottom: 15px; padding: 12px; background: #fff3cd; border-left: 4px solid #ffc107; border-radius: 4px;">
+                    <strong>⚠️ Warnings:</strong>
+                    <ul id="warnings-list" style="margin: 8px 0 0 0; padding-left: 20px;"></ul>
+                </div>
+                
+                <!-- Inclusion/Exclusion Criteria Display -->
+                <div id="criteria-section" style="display: none; margin-top: 20px; padding-top: 15px; border-top: 2px solid #667eea;">
+                    <h4 style="margin-top: 0; color: #667eea; margin-bottom: 15px;">📋 Research Aim & Eligibility Criteria</h4>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #333;">
+                            Research Aim:
+                        </label>
+                        <textarea 
+                            id="research-aim-display" 
+                            readonly
+                            style="width: 100%; min-height: 80px; padding: 12px; border: 2px solid #667eea; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 13px; background: #f8f9fa; resize: vertical; white-space: pre-wrap; word-wrap: break-word;"
+                            placeholder="Research aim will appear here after extraction..."
+                        ></textarea>
+                        <div style="margin-top: 5px; font-size: 12px; color: #666;">
+                            The research aim/objective of the systematic review. This will be used by reviewers to understand the study context.
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #333;">
+                            Inclusion Criteria (verbatim from article):
+                        </label>
+                        <textarea 
+                            id="inclusion-criteria-display" 
+                            readonly
+                            style="width: 100%; min-height: 120px; padding: 12px; border: 2px solid #28a745; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 13px; background: #f8f9fa; resize: vertical; white-space: pre-wrap; word-wrap: break-word;"
+                            placeholder="Inclusion criteria will appear here after extraction..."
+                        ></textarea>
+                        <div style="margin-top: 5px; font-size: 12px; color: #666;">
+                            This text is extracted verbatim from the original article. You can copy it for use in screening.
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 8px; color: #333;">
+                            Exclusion Criteria (verbatim from article):
+                        </label>
+                        <textarea 
+                            id="exclusion-criteria-display" 
+                            readonly
+                            style="width: 100%; min-height: 120px; padding: 12px; border: 2px solid #dc3545; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 13px; background: #f8f9fa; resize: vertical; white-space: pre-wrap; word-wrap: break-word;"
+                            placeholder="Exclusion criteria will appear here after extraction..."
+                        ></textarea>
+                        <div style="margin-top: 5px; font-size: 12px; color: #666;">
+                            This text is extracted verbatim from the original article. You can copy it for use in screening.
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #eee;">
+                    <strong>Next:</strong> Review the auto-filled fields below and click "Search" to validate results.
+                </div>
+            </div>
+        </div>
+
+        <div class="search-section">
+            <form id="searchForm">
+                <div class="form-group">
+                    <label for="query">Search Query</label>
+                    <textarea 
+                        id="query" 
+                        name="query" 
+                        placeholder="Enter your research question or search terms (e.g., 'What is the effectiveness of surgical versus conservative treatment for acute Achilles tendon rupture?')"
+                        required
+                    ></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="top_k">Number of Results</label>
+                        <input type="number" id="top_k" name="top_k" value="1000" min="1" max="5000">
+                    </div>
+                    <div class="form-group">
+                        <label for="min_similarity">Minimum Similarity</label>
+                        <input type="number" id="min_similarity" name="min_similarity" value="0.05" min="0" max="1" step="0.05">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="exclude_reviews" name="exclude_reviews" style="width: auto; cursor: pointer;">
+                        <span>Exclude systematic reviews and meta-analyses (show only primary studies)</span>
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="use_reranker" name="use_reranker" style="width: auto; cursor: pointer;" onchange="toggleRerankerModel()">
+                        <span>Use precision reranking (slower, more accurate)</span>
+                    </label>
+                </div>
+                <div class="form-group" id="reranker_model_group" style="display: none; margin-left: 30px;">
+                    <label for="reranker_model">Reranker Model:</label>
+                    <select id="reranker_model" name="reranker_model" style="max-width: 400px;">
+                        <option value="best">Best Quality (Electra Base) - Slowest</option>
+                        <option value="balanced">Balanced (MiniLM-L-12) - Medium</option>
+                        <option value="fast">Fast (MiniLM-L-6) - Fastest</option>
+                    </select>
+                </div>
+
+                <div class="advanced-options">
+                    <div class="advanced-toggle" onclick="toggleAdvanced()">▼ Advanced Options</div>
+                    <div class="advanced-content" id="advancedContent">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="date_after">Published After</label>
+                                <input type="date" id="date_after" name="date_after">
+                            </div>
+                            <div class="form-group">
+                                <label for="date_before">Published Before</label>
+                                <input type="date" id="date_before" name="date_before">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Included Studies for Comparison</label>
+                            <div id="includedStudiesSection">
+                                <div id="selectedPapersBadge" style="display: none; padding: 10px; background: #d4edda; border: 1px solid #28a745; border-radius: 6px; margin-bottom: 10px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <div>
+                                            <strong>✓ Papers selected for comparison:</strong> <span id="selectedPapersCount">0</span> papers
+                                            <button type="button" onclick="clearSelectedPapers()" style="margin-left: 10px; padding: 4px 8px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Clear</button>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 10px;">
+                                        <button type="button" onclick="downloadComparisonTable()" class="btn btn-secondary" style="padding: 6px 12px; font-size: 14px;" id="downloadComparisonBtn" disabled>
+                                            📥 Download Comparison Table
+                                        </button>
+                                        <span style="font-size: 0.85em; color: #666; margin-left: 10px;">(Run a search first to see match status)</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-secondary" onclick="openCheckPapersModal()" style="width: 100%;">
+                                    📋 Check Papers & Select for Comparison
+                                </button>
+                                <p style="margin-top: 8px; font-size: 0.9em; color: #666;">
+                                    Click to paste your systematic review reference list and select papers for comparison with search results.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="btn-group" style="margin-top: 20px;">
+                    <button type="submit" class="btn" id="searchBtn">Search</button>
+                    <button type="button" class="btn btn-secondary" onclick="loadStats()">Database Stats</button>
+                    <button type="button" class="btn btn-secondary" onclick="openCheckPapersModal()">Check Papers in Database</button>
+                    <button type="button" class="btn" onclick="screenWithAI()" id="screenWithAIBtn" disabled style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                        🤖 Screen with AI
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="exportResults('csv')" id="exportCsvBtn" disabled>Export CSV</button>
+                    <button type="button" class="btn btn-secondary" onclick="exportResults('ris')" id="exportRisBtn" disabled>Export RIS</button>
+                    <button type="button" class="btn btn-secondary" onclick="exportScreeningResults()" id="exportScreeningBtn" disabled>Export Screening Results</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <div class="stats-bar" id="statsBar"></div>
+            
+            <!-- Filter Tabs (shown when match statistics or screening results are available) -->
+            <div id="filterTabsSection" style="display: none; margin-top: 20px; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <strong style="margin-right: 10px;">Filter:</strong>
+                    <button class="filter-tab active" onclick="filterResults('all')" id="filter-all">All Results</button>
+                    <button class="filter-tab" onclick="filterResults('matches')" id="filter-matches">🔗 Matches</button>
+                    <button class="filter-tab" onclick="filterResults('include')" id="filter-include" style="display: none;">✅ Included (<span id="filter-count-include">0</span>)</button>
+                    <button class="filter-tab" onclick="filterResults('exclude')" id="filter-exclude" style="display: none;">❌ Excluded (<span id="filter-count-exclude">0</span>)</button>
+                    <button class="filter-tab" onclick="filterResults('disagreement')" id="filter-disagreement" style="display: none;">⚠️ Disagreement (<span id="filter-count-disagreement">0</span>)</button>
+                    <button class="filter-tab" onclick="filterResults('uncertain')" id="filter-uncertain" style="display: none;">❓ Uncertain (<span id="filter-count-uncertain">0</span>)</button>
+                </div>
+            </div>
+            
+            <div id="resultsContainer"></div>
+        </div>
+
+        <div id="loadingSection" style="display: none;">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Searching through 315,628 articles...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Check Papers Modal -->
+    <div id="checkPapersModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Check Papers in Database</h2>
+                <span class="close" onclick="closeCheckPapersModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p>Paste paper references below. The system will try to identify papers by PMID, DOI, title, or author/year.</p>
+                <div class="form-group">
+                    <label for="pastedPapers">Paste Paper References (one per line):</label>
+                    <textarea 
+                        id="pastedPapers" 
+                        rows="15" 
+                        placeholder="Examples:&#10;PMID: 12345678&#10;Smith J, et al. (2020). &quot;Title of paper&quot;. Journal Name.&#10;DOI: 10.1234/example&#10;Author A, Author B. Title of paper. Journal. 2019."
+                    ></textarea>
+                </div>
+                <button type="button" class="btn" onclick="checkPapers()">Check Papers</button>
+                <div id="checkPapersResults" style="margin-top: 20px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentResults = null;
+        let selectedPapersForComparison = []; // Store PMIDs selected from check papers feature
+        let lastCheckedPapersData = null; // Store last check papers results
+        let referenceComparisonData = null; // Store all reference data for comparison table export
+        let screeningResults = null; // Store AI screening results
+        let inclusionCriteria = null; // Store extracted inclusion criteria
+        let exclusionCriteria = null; // Store extracted exclusion criteria
+        let researchAim = null; // Store extracted research aim
+        let currentFilter = 'all'; // Current active filter
+        let screeningResultsMap = {}; // Map of PMID to screening result for quick lookup
+
+        function toggleAdvanced() {
+            const content = document.getElementById('advancedContent');
+            const toggle = document.querySelector('.advanced-toggle');
+            content.classList.toggle('show');
+            toggle.textContent = content.classList.contains('show') ? '▲ Advanced Options' : '▼ Advanced Options';
+        }
+
+        function toggleRerankerModel() {
+            const checkbox = document.getElementById('use_reranker');
+            const modelGroup = document.getElementById('reranker_model_group');
+            modelGroup.style.display = checkbox.checked ? 'block' : 'none';
+        }
+
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                query: document.getElementById('query').value,
+                top_k: parseInt(document.getElementById('top_k').value),
+                min_similarity: parseFloat(document.getElementById('min_similarity').value),
+                date_after: document.getElementById('date_after').value || null,
+                date_before: document.getElementById('date_before').value || null,
+                exclude_reviews: document.getElementById('exclude_reviews').checked,
+                use_reranker: document.getElementById('use_reranker').checked,
+                reranker_model: document.getElementById('reranker_model').value,
+                faiss_candidates: 100  // Retrieve 100 candidates for reranking
+            };
+
+            // Use selected papers from check papers feature
+            if (selectedPapersForComparison.length > 0) {
+                formData.included_studies = selectedPapersForComparison.join(',');
+            }
+
+            await performSearch(formData);
+        });
+
+        async function performSearch(formData) {
+            const resultsSection = document.getElementById('resultsSection');
+            const loadingSection = document.getElementById('loadingSection');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const statsBar = document.getElementById('statsBar');
+            const searchBtn = document.getElementById('searchBtn');
+
+            resultsSection.style.display = 'none';
+            loadingSection.style.display = 'block';
+            searchBtn.disabled = true;
+            resultsContainer.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                // Get response text first (can only read once)
+                const responseText = await response.text();
+
+                // Check response status
+                if (!response.ok) {
+                    let errorMsg = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorData = JSON.parse(responseText);
+                        errorMsg = errorData.error || errorMsg;
+                        const errorDetails = errorData.details ? `<br><small style="color: #666;">${errorData.details}</small>` : '';
+                        resultsContainer.innerHTML = `<div class="error">Error: ${errorMsg}${errorDetails}</div>`;
+                    } catch (e) {
+                        resultsContainer.innerHTML = `<div class="error">Error: ${errorMsg}<br><small style="color: #666;">Response: ${responseText.substring(0, 200)}</small></div>`;
+                    }
+                    return;
+                }
+
+                // Parse JSON response
+                let results;
+                try {
+                    if (!responseText || responseText.trim() === '') {
+                        throw new Error('Empty response from server');
+                    }
+                    results = JSON.parse(responseText);
+                } catch (e) {
+                    // Log the actual response for debugging
+                    console.error('JSON parsing error:', e);
+                    console.error('Response text (first 500 chars):', responseText.substring(0, 500));
+                    const errorDetails = e.message || 'Unknown parsing error';
+                    resultsContainer.innerHTML = `<div class="error">Failed to parse server response: ${errorDetails}<br><small style="color: #666;">Check the browser console (F12) for more details.</small></div>`;
+                    return;
+                }
+
+                currentResults = results;
+
+                if (results.error) {
+                    const errorDetails = results.details ? `<br><small style="color: #666;">${results.details}</small>` : '';
+                    resultsContainer.innerHTML = `<div class="error">Error: ${results.error}${errorDetails}</div>`;
+                } else {
+                    // Update reference comparison data with search match status
+                    if (referenceComparisonData && results.match_statistics) {
+                        const matchedPmids = new Set();
+                        if (results.results) {
+                            results.results.forEach(r => {
+                                if (r.is_match) {
+                                    matchedPmids.add(r.pmid);
+                                }
+                            });
+                        }
+                        
+                        // Update found papers
+                        referenceComparisonData.found.forEach(paper => {
+                            paper.in_search_results = matchedPmids.has(paper.pmid);
+                        });
+                        
+                        // Not found papers can't be in search results
+                        referenceComparisonData.not_found.forEach(paper => {
+                            paper.in_search_results = false;
+                        });
+                        
+                        // Enable download button
+                        const downloadBtn = document.getElementById('downloadComparisonBtn');
+                        if (downloadBtn) {
+                            downloadBtn.disabled = false;
+                        }
+                    }
+                    
+                    displayResults(results);
+                }
+
+                // Enable export buttons
+                document.getElementById('exportCsvBtn').disabled = false;
+                document.getElementById('exportRisBtn').disabled = false;
+                
+                // Update screening button state
+                updateScreeningButtonState();
+
+            } catch (error) {
+                resultsContainer.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            } finally {
+                loadingSection.style.display = 'none';
+                resultsSection.style.display = 'block';
+                searchBtn.disabled = false;
+            }
+        }
+
+        function displayResults(results) {
+            const statsBar = document.getElementById('statsBar');
+            const resultsContainer = document.getElementById('resultsContainer');
+            const filterTabsSection = document.getElementById('filterTabsSection');
+
+            // Ensure currentResults is set
+            if (!currentResults) {
+                currentResults = results;
+            }
+
+            // Store original results with their original ranks for filtering
+            if (!currentResults.original_results) {
+                currentResults.original_results = results.results.map((r, idx) => ({
+                    ...r,
+                    original_rank: idx + 1
+                }));
+            }
+
+            // Start with all results
+            let displayResults = results.results;
+
+            // Check if "Show only matches" checkbox is checked (works before screening)
+            const showMatchesOnlyCheckbox = document.getElementById('showMatchesOnly');
+            const showMatchesOnly = showMatchesOnlyCheckbox ? showMatchesOnlyCheckbox.checked : false;
+
+            // Apply filters
+            if (currentFilter === 'matches' || showMatchesOnly) {
+                const hasMatchStats = results.match_statistics || (currentResults && currentResults.match_statistics);
+                if (hasMatchStats) {
+                    displayResults = results.results.filter(r => r.is_match === true);
+                    // Update currentFilter to 'matches' if checkbox is checked
+                    if (showMatchesOnly && currentFilter !== 'matches') {
+                        currentFilter = 'matches';
+                    }
+                }
+            } else if (currentFilter !== 'all' && screeningResults && screeningResults.results) {
+                // Filter by screening category
+                const categoryMap = {
+                    'include': 'include',
+                    'exclude': 'exclude',
+                    'disagreement': 'disagreement',
+                    'uncertain': 'uncertain'
+                };
+                const targetCategory = categoryMap[currentFilter];
+                if (targetCategory) {
+                    const screenedPmids = new Set(
+                        screeningResults.results
+                            .filter(r => r.final_category === targetCategory)
+                            .map(r => r.pmid)
+                    );
+                    displayResults = results.results.filter(r => screenedPmids.has(r.pmid));
+                }
+            }
+
+            // Show/hide filter tabs based on whether match statistics or screening results exist
+            const hasMatchStats = results.match_statistics || (currentResults && currentResults.match_statistics);
+            const hasScreeningResults = screeningResults && screeningResults.results && screeningResults.results.length > 0;
+            
+            if (hasMatchStats || hasScreeningResults) {
+                filterTabsSection.style.display = 'block';
+                
+                // Show/hide screening filter tabs based on whether screening was done
+                const screeningTabs = ['filter-include', 'filter-exclude', 'filter-disagreement', 'filter-uncertain'];
+                screeningTabs.forEach(tabId => {
+                    const tab = document.getElementById(tabId);
+                    if (tab) {
+                        tab.style.display = hasScreeningResults ? 'inline-block' : 'none';
+                    }
+                });
+                
+                if (hasScreeningResults) {
+                    updateFilterCounts();
+                }
+            } else {
+                filterTabsSection.style.display = 'none';
+            }
+
+            // Update stats bar
+            let statsHTML = `
+                <div class="stat-item">
+                    <span class="stat-label">Results:</span>
+                    <span class="stat-value">${displayResults.length}${currentFilter !== 'all' ? ` (${results.results.length} total)` : ''}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Search Time:</span>
+                    <span class="stat-value">${results.search_time_ms.toFixed(0)} ms</span>
+                </div>
+            `;
+
+            if (results.match_statistics) {
+                const ms = results.match_statistics;
+                statsHTML += `
+                    <div class="stat-item">
+                        <span class="stat-label">Matched:</span>
+                        <span class="stat-value">${ms.matched}/${ms.total_included_studies}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Recall:</span>
+                        <span class="stat-value">${(ms.recall * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="stat-item" style="margin-left: auto;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="showMatchesOnly" onchange="toggleMatchesFilter()" ${currentFilter === 'matches' ? 'checked' : ''} style="width: auto; cursor: pointer;">
+                            <span>🔗 Show only matches</span>
+                        </label>
+                    </div>
+                `;
+            }
+
+            statsBar.innerHTML = statsHTML;
+
+            // Display results
+            if (displayResults.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="no-results">
+                        <h3>No results found</h3>
+                        <p>${currentFilter === 'matches' ? 'No matches found. Try selecting a different filter to see all results.' : 'Try adjusting your search query or lowering the minimum similarity threshold.'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Find original ranks for filtered results
+            const originalResults = currentResults.original_results || results.results.map((r, idx) => ({...r, original_rank: idx + 1}));
+            const rankMap = new Map();
+            originalResults.forEach((r, idx) => {
+                rankMap.set(r.pmid, idx + 1);
+            });
+
+            // Get screening result for this paper if available
+            const getScreeningBadge = (pmid) => {
+                const screening = screeningResultsMap[pmid];
+                if (!screening) {
+                    return '<span class="screening-badge not-screened">Not Screened</span>';
+                }
+                // If supervisor made a decision, use that; otherwise use original category
+                const category = screening.gpt5_supervisor_decision || screening.final_category || 'uncertain';
+                const labels = {
+                    'include': '✅ Included',
+                    'exclude': '❌ Excluded',
+                    'disagreement': '⚠️ Disagreement',
+                    'uncertain': '❓ Uncertain'
+                };
+                const badgeClass = screening.gpt5_supervisor_decision ? category + ' supervisor' : category;
+                const supervisorIcon = screening.gpt5_supervisor_decision ? '⚖️ ' : '';
+                return `<span class="screening-badge ${badgeClass}">${supervisorIcon}${labels[category] || 'Uncertain'}</span>`;
+            };
+
+            resultsContainer.innerHTML = displayResults.map((result, index) => {
+                const hasAbstract = result.abstract && result.abstract.trim().length > 0;
+                const abstractId = `abstract-${index}`;
+                const abstractClass = hasAbstract && result.abstract.length > 300 ? 'collapsed' : '';
+                const originalRank = rankMap.get(result.pmid) || (index + 1);
+                const screening = screeningResultsMap[result.pmid];
+                
+                return `
+                    <div class="result-card">
+                        <div class="result-header">
+                            <div class="result-title">
+                                ${originalRank}. ${escapeHtml(result.title)}
+                                ${result.is_match ? '<span class="match-badge">MATCH</span>' : ''}
+                                ${getScreeningBadge(result.pmid)}
+                            </div>
+                            <div class="similarity-score">
+                                ${result.rerank_score !== undefined 
+                                    ? `Relevance: ${(result.rerank_score * 100).toFixed(1)}% | Semantic: ${(result.faiss_score * 100).toFixed(1)}%`
+                                    : `Similarity: ${(result.similarity_score * 100).toFixed(1)}%`}
+                            </div>
+                        </div>
+                        <div class="result-meta">
+                            <strong>PMID:</strong> ${result.pmid} | 
+                            <strong>Journal:</strong> ${escapeHtml(result.journal)} | 
+                            <strong>Year:</strong> ${result.pub_year || 'N/A'}
+                            ${result.doi ? ` | <strong>DOI:</strong> ${result.doi}` : ''}
+                        </div>
+                        ${result.authors ? `<div class="result-meta"><strong>Authors:</strong> ${escapeHtml(result.authors)}</div>` : ''}
+                        ${hasAbstract ? `
+                            <div class="result-abstract ${abstractClass}" id="${abstractId}">
+                                ${escapeHtml(result.abstract)}
+                            </div>
+                            ${result.abstract.length > 300 ? `
+                                <span class="toggle-abstract" onclick="toggleAbstract('${abstractId}')">Show more</span>
+                            ` : ''}
+                        ` : ''}
+                        ${screening ? `
+                            <div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid ${screening.final_category === 'include' ? '#28a745' : screening.final_category === 'exclude' ? '#dc3545' : screening.final_category === 'disagreement' ? '#ffc107' : '#6c757d'};">
+                                <div style="font-weight: bold; margin-bottom: 10px; color: #333;">🤖 AI Screening Results</div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 10px;">
+                                    <div style="padding: 10px; background: white; border-radius: 4px;">
+                                        <div style="font-weight: bold; color: #10a37f; margin-bottom: 5px;">GPT-4o-mini</div>
+                                        <div><strong>Decision:</strong> <span style="text-transform: capitalize;">${screening.gpt4o_decision}</span></div>
+                                        <div><strong>Confidence:</strong> <span style="text-transform: capitalize;">${screening.gpt4o_confidence}</span></div>
+                                        <div style="margin-top: 8px; font-size: 0.9em; color: #555;"><strong>Reasoning:</strong> ${escapeHtml(screening.gpt4o_reasoning || 'N/A')}</div>
+                                    </div>
+                                    <div style="padding: 10px; background: white; border-radius: 4px;">
+                                        <div style="font-weight: bold; color: #10a37f; margin-bottom: 5px;">GPT-5-mini</div>
+                                        <div><strong>Decision:</strong> <span style="text-transform: capitalize;">${screening.gpt5mini_decision}</span></div>
+                                        <div><strong>Confidence:</strong> <span style="text-transform: capitalize;">${screening.gpt5mini_confidence}</span></div>
+                                        <div style="margin-top: 8px; font-size: 0.9em; color: #555;"><strong>Reasoning:</strong> ${escapeHtml(screening.gpt5mini_reasoning || 'N/A')}</div>
+                                    </div>
+                                </div>
+                                ${screening.agreement ? 
+                                    '<div style="color: #28a745; font-weight: bold;">✓ Agreement between reviewers</div>' : 
+                                    '<div style="color: #ffc107; font-weight: bold;">⚠ Disagreement - requires human review</div>'
+                                }
+                                ${(screening.final_category === 'disagreement' || screening.final_category === 'uncertain') && !screening.gpt5_supervisor_decision ? `
+                                    <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffc107;">
+                                        <button 
+                                            onclick="arbitrateWithGPT5('${result.pmid}')" 
+                                            id="arbitrate-btn-${result.pmid}"
+                                            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px;"
+                                        >
+                                            ⚖️ Arbitrate with GPT-5 Supervisor
+                                        </button>
+                                        <p style="margin: 8px 0 0 0; font-size: 0.9em; color: #666;">Click to have GPT-5 make the final decision</p>
+                                    </div>
+                                ` : ''}
+                                ${screening.gpt5_supervisor_decision ? `
+                                    <div style="margin-top: 15px; padding: 15px; background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%); border-radius: 6px; border: 2px solid #667eea;">
+                                        <div style="font-weight: bold; margin-bottom: 10px; color: #667eea; font-size: 1.1em;">⚖️ GPT-5 Supervisor Final Decision</div>
+                                        <div style="margin-bottom: 10px;">
+                                            <strong>Final Decision:</strong> 
+                                            <span class="screening-badge ${screening.gpt5_supervisor_decision}" style="margin-left: 8px;">
+                                                ${screening.gpt5_supervisor_decision === 'include' ? '✅ INCLUDED' : '❌ EXCLUDED'}
+                                            </span>
+                                            <span style="margin-left: 10px; color: #666;">
+                                                (Confidence: <strong>${screening.gpt5_supervisor_confidence || 'N/A'}</strong>)
+                                            </span>
+                                        </div>
+                                        <div style="margin-bottom: 10px; padding: 10px; background: white; border-radius: 4px;">
+                                            <strong>Supervisor Reasoning:</strong>
+                                            <p style="margin: 8px 0 0 0; line-height: 1.6; color: #555; font-size: 0.95em;">
+                                                ${escapeHtml(screening.gpt5_supervisor_reasoning || 'N/A')}
+                                            </p>
+                                        </div>
+                                        ${screening.gpt5_decisive_factors ? `
+                                            <div style="margin-bottom: 10px; padding: 10px; background: white; border-radius: 4px;">
+                                                <strong>Decisive Factors:</strong>
+                                                <p style="margin: 8px 0 0 0; color: #555; font-size: 0.95em;">
+                                                    ${escapeHtml(screening.gpt5_decisive_factors)}
+                                                </p>
+                                            </div>
+                                        ` : ''}
+                                        ${screening.gpt5_reviewer_analysis ? `
+                                            <div style="padding: 10px; background: white; border-radius: 4px;">
+                                                <strong>Reviewer Analysis:</strong>
+                                                <p style="margin: 8px 0 0 0; color: #555; font-size: 0.95em;">
+                                                    ${escapeHtml(screening.gpt5_reviewer_analysis)}
+                                                </p>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        ` : ''}
+                        ${result.mesh_terms ? `
+                            <div class="result-meta" style="margin-top: 10px;">
+                                <strong>MeSH Terms:</strong> ${escapeHtml(result.mesh_terms.substring(0, 200))}${result.mesh_terms.length > 200 ? '...' : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Filter results by category
+        function filterResults(filter) {
+            currentFilter = filter;
+            
+            // Update filter tab buttons
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            const filterTab = document.getElementById(`filter-${filter}`);
+            if (filterTab) {
+                filterTab.classList.add('active');
+            }
+            
+            // Update "Show only matches" checkbox if switching to/from matches filter
+            const showMatchesOnlyCheckbox = document.getElementById('showMatchesOnly');
+            if (showMatchesOnlyCheckbox) {
+                showMatchesOnlyCheckbox.checked = (filter === 'matches');
+            }
+            
+            // Re-display results with filter applied
+            if (currentResults) {
+                displayResults(currentResults);
+            }
+        }
+
+        // Toggle matches filter (from checkbox)
+        function toggleMatchesFilter() {
+            const checkbox = document.getElementById('showMatchesOnly');
+            if (!checkbox) return;
+            
+            if (checkbox.checked) {
+                currentFilter = 'matches';
+                // Update filter tabs if they exist
+                document.querySelectorAll('.filter-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                const matchesTab = document.getElementById('filter-matches');
+                if (matchesTab) {
+                    matchesTab.classList.add('active');
+                }
+            } else {
+                currentFilter = 'all';
+                // Update filter tabs if they exist
+                document.querySelectorAll('.filter-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                const allTab = document.getElementById('filter-all');
+                if (allTab) {
+                    allTab.classList.add('active');
+                }
+            }
+            
+            // Re-display results
+            if (currentResults) {
+                displayResults(currentResults);
+            }
+        }
+
+        // Update filter counts
+        function updateFilterCounts() {
+            if (!screeningResults || !screeningResults.results) return;
+            
+            const counts = {
+                include: 0,
+                exclude: 0,
+                disagreement: 0,
+                uncertain: 0
+            };
+            
+            screeningResults.results.forEach(r => {
+                const cat = r.final_category || 'uncertain';
+                if (counts.hasOwnProperty(cat)) {
+                    counts[cat]++;
+                }
+            });
+            
+            document.getElementById('filter-count-include').textContent = counts.include;
+            document.getElementById('filter-count-exclude').textContent = counts.exclude;
+            document.getElementById('filter-count-disagreement').textContent = counts.disagreement;
+            document.getElementById('filter-count-uncertain').textContent = counts.uncertain;
+        }
+
+
+        function toggleAbstract(id) {
+            const abstract = document.getElementById(id);
+            const toggle = abstract.nextElementSibling;
+            
+            if (abstract.classList.contains('collapsed')) {
+                abstract.classList.remove('collapsed');
+                toggle.textContent = 'Show less';
+            } else {
+                abstract.classList.add('collapsed');
+                toggle.textContent = 'Show more';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/stats');
+                const stats = await response.json();
+                
+                alert(`Database Statistics:\n\n` +
+                      `Total Articles: ${stats.total_articles.toLocaleString()}\n` +
+                      `With Abstracts: ${stats.with_abstract.toLocaleString()}\n` +
+                      `Without Abstracts: ${stats.without_abstract.toLocaleString()}\n` +
+                      `Year Range: ${stats.year_range}`);
+            } catch (error) {
+                alert('Error loading stats: ' + error.message);
+            }
+        }
+
+        async function exportResults(format) {
+            if (!currentResults) {
+                alert('No results to export. Please perform a search first.');
+                return;
+            }
+
+            try {
+                // Include screening results if available
+                const exportData = {
+                    results: currentResults,
+                    screening_results: screeningResults || null
+                };
+
+                const response = await fetch(`/api/export/${format}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(exportData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `search_results.${format}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                alert('Error exporting results: ' + error.message);
+            }
+        }
+
+        // Store auto-filled titles globally so they persist
+        let autoFilledTitles = null;
+
+        // Function to select and use a query
+        function selectQuery(queryText) {
+            const queryInput = document.getElementById('query');
+            if (queryInput) {
+                queryInput.value = queryText;
+                queryInput.focus();
+                // Scroll to query input
+                queryInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Show brief feedback
+                const statusDiv = document.getElementById('extraction-status');
+                if (statusDiv) {
+                    const originalText = statusDiv.innerHTML;
+                    statusDiv.innerHTML = '<span style="color: #28a745; font-weight: bold;">✓ Query selected and filled into search field!</span>';
+                    setTimeout(() => {
+                        if (statusDiv.innerHTML.includes('✓ Query selected')) {
+                            statusDiv.innerHTML = originalText;
+                        }
+                    }, 3000);
+                }
+            }
+        }
+
+        function openCheckPapersModal() {
+            const modal = document.getElementById('checkPapersModal');
+            const textarea = document.getElementById('pastedPapers');
+            
+            modal.style.display = 'block';
+            
+            // Restore auto-filled titles if they exist
+            if (autoFilledTitles && autoFilledTitles.length > 0) {
+                const titlesText = autoFilledTitles.join('\n');
+                textarea.value = titlesText;
+                console.log('✓ Restored auto-filled titles in modal:', autoFilledTitles.length, 'titles');
+            } else if (!textarea.value || textarea.value.trim().length === 0) {
+                // Only clear if no auto-filled data and field is empty
+                textarea.value = '';
+            }
+            
+            // Clear results but preserve textarea content
+            document.getElementById('checkPapersResults').innerHTML = '';
+        }
+
+        function closeCheckPapersModal() {
+            document.getElementById('checkPapersModal').style.display = 'none';
+        }
+
+        function usePapersForComparison() {
+            if (!lastCheckedPapersData || lastCheckedPapersData.length === 0) {
+                alert('No papers available. Please check papers first.');
+                return;
+            }
+            selectedPapersForComparison = lastCheckedPapersData;
+            updateSelectedPapersBadge();
+            closeCheckPapersModal();
+            // Show a brief notification
+            alert(`✓ ${selectedPapersForComparison.length} papers selected for comparison!\n\nThese papers will be used to compare with your semantic search results.`);
+        }
+
+        function clearSelectedPapers() {
+            selectedPapersForComparison = [];
+            referenceComparisonData = null;
+            updateSelectedPapersBadge();
+        }
+
+        function updateSelectedPapersBadge() {
+            const badge = document.getElementById('selectedPapersBadge');
+            const count = document.getElementById('selectedPapersCount');
+            const downloadBtn = document.getElementById('downloadComparisonBtn');
+            
+            if (selectedPapersForComparison.length > 0) {
+                badge.style.display = 'block';
+                count.textContent = selectedPapersForComparison.length;
+                // Enable download button if we have reference data
+                if (referenceComparisonData) {
+                    downloadBtn.disabled = false;
+                }
+            } else {
+                badge.style.display = 'none';
+                downloadBtn.disabled = true;
+            }
+        }
+
+        async function downloadComparisonTable() {
+            if (!referenceComparisonData) {
+                alert('No reference data available. Please check papers first.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/export/comparison', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        reference_data: referenceComparisonData,
+                        search_results: currentResults
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                a.download = `comparison_table_${timestamp}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                alert('Error downloading comparison table: ' + error.message);
+            }
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('checkPapersModal');
+            if (event.target == modal) {
+                closeCheckPapersModal();
+            }
+        }
+
+        async function checkPapers() {
+            const pastedText = document.getElementById('pastedPapers').value.trim();
+            const resultsDiv = document.getElementById('checkPapersResults');
+            
+            if (!pastedText) {
+                resultsDiv.innerHTML = '<div class="error">Please paste some paper references.</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<div class="loading"><div class="spinner"></div><p>Checking papers...</p></div>';
+            
+            try {
+                const response = await fetch('/api/check_papers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ pasted_text: pastedText })
+                });
+                
+                const responseText = await response.text();
+                
+                if (!response.ok) {
+                    let errorMsg = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorData = JSON.parse(responseText);
+                        errorMsg = errorData.error || errorMsg;
+                    } catch (e) {
+                        errorMsg = responseText;
+                    }
+                    resultsDiv.innerHTML = `<div class="error">Error: ${errorMsg}</div>`;
+                    return;
+                }
+                
+                const data = JSON.parse(responseText);
+                
+                if (data.error) {
+                    resultsDiv.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                    return;
+                }
+                
+                // Extract PMIDs from found papers
+                const foundPmids = data.found.map(item => item.database.pmid);
+                lastCheckedPapersData = foundPmids; // Store for use in button
+                
+                // Store reference comparison data for export
+                referenceComparisonData = {
+                    original_text: pastedText,
+                    found: data.found.map(item => ({
+                        original_text: item.parsed.original_text || '',
+                        pmid: item.database.pmid,
+                        title: item.database.title,
+                        journal: item.database.journal || '',
+                        year: item.database.pub_year || '',
+                        doi: item.database.doi || '',
+                        match_method: item.database.match_method,
+                        in_search_results: false // Will be updated after search
+                    })),
+                    not_found: data.not_found.map(item => ({
+                        original_text: item.original_text || '',
+                        pmid: null,
+                        title: null,
+                        journal: null,
+                        year: null,
+                        doi: null,
+                        match_method: 'Not in database',
+                        in_search_results: false
+                    }))
+                };
+                
+                // Display results
+                let html = `<div style="margin-bottom: 20px; padding: 15px; background: #e7f3ff; border-radius: 8px;">
+                    <h3>Summary</h3>
+                    <p><strong>Total checked:</strong> ${data.total_checked}</p>
+                    <p><strong>Found:</strong> ${data.summary.found_count} (${data.summary.found_percentage})</p>
+                    <p><strong>Not found:</strong> ${data.summary.not_found_count}</p>
+                </div>`;
+                
+                // Add button to use found papers for comparison
+                if (data.found.length > 0) {
+                    html += `
+                        <div style="margin: 20px 0; padding: 15px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px;">
+                            <h3 style="margin-top: 0;">Use These Papers for Comparison</h3>
+                            <p>Click the button below to use the ${data.found.length} found papers for comparison with your semantic search results.</p>
+                            <button type="button" class="btn" onclick="usePapersForComparison()" style="background: #28a745; color: white; margin-top: 10px;">
+                                ✓ Use ${data.found.length} Papers for Comparison
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                // Show found papers
+                if (data.found.length > 0) {
+                    html += '<h3 style="color: #28a745; margin-top: 20px;">✅ Found in Database</h3>';
+                    data.found.forEach((item, idx) => {
+                        const db = item.database;
+                        html += `
+                            <div class="paper-check-result found">
+                                <h4>${idx + 1}. ${item.parsed.original_text || 'Paper'}</h4>
+                                <div class="database-info">
+                                    <p><strong>PMID:</strong> ${db.pmid}</p>
+                                    <p><strong>Title:</strong> ${db.title}</p>
+                                    <p><strong>Journal:</strong> ${db.journal || 'N/A'}</p>
+                                    <p><strong>Year:</strong> ${db.pub_year || 'N/A'}</p>
+                                    ${db.doi ? `<p><strong>DOI:</strong> ${db.doi}</p>` : ''}
+                                    <p><strong>Matched by:</strong> ${db.match_method} ${db.match_confidence ? `(${db.match_confidence})` : ''}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                
+                // Show not found papers
+                if (data.not_found.length > 0) {
+                    html += '<h3 style="color: #dc3545; margin-top: 20px;">❌ Not Found in Database</h3>';
+                    data.not_found.forEach((item, idx) => {
+                        html += `
+                            <div class="paper-check-result not-found">
+                                <h4>${idx + 1}. ${item.original_text || 'Paper'}</h4>
+                                <p class="match-info">Could not find this paper in the database.</p>
+                            </div>
+                        `;
+                    });
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Helper function to parse end date from date_range string
+        function parseEndDate(dateRange) {
+            if (!dateRange) return null;
+            
+            console.log('Parsing date range:', dateRange);
+            
+            // Remove common prefixes
+            let dateStr = dateRange.trim();
+            dateStr = dateStr.replace(/^(searched|searches|search|up to|through|until|from|between)\s+/i, '');
+            
+            const monthNames = ['january', 'february', 'march', 'april', 'may', 'june',
+                               'july', 'august', 'september', 'october', 'november', 'december'];
+            const monthAbbr = ['jan', 'feb', 'mar', 'apr', 'may', 'jun',
+                              'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+            
+            // Helper function to find month index
+            const findMonthIndex = (monthName) => {
+                const lower = monthName.toLowerCase();
+                let idx = monthNames.indexOf(lower);
+                if (idx === -1) idx = monthAbbr.indexOf(lower);
+                return idx;
+            };
+            
+            // Pattern 1: "inception to June 30, 2021" or "inception to 30 June 2021" -> extract end date with day
+            const dayMonthYearPattern = /(?:to|until|through|-)\s+([A-Za-z]+\s+\d{1,2}[,\s]+\d{4}|\d{1,2}\s+[A-Za-z]+\s+\d{4})/i;
+            let match = dateStr.match(dayMonthYearPattern);
+            if (match) {
+                const datePart = match[1].trim();
+                console.log('Pattern 1 matched date part:', datePart);
+                
+                // Try "June 30, 2021" format
+                const format1 = /([A-Za-z]+)\s+(\d{1,2})[,\s]+\d{4}/i;
+                let dateMatch = datePart.match(format1);
+                if (dateMatch) {
+                    const monthName = dateMatch[1];
+                    const day = parseInt(dateMatch[2]);
+                    const yearMatch = datePart.match(/\d{4}/);
+                    if (yearMatch) {
+                        const year = yearMatch[0];
+                        const monthIndex = findMonthIndex(monthName);
+                        if (monthIndex !== -1) {
+                            const month = String(monthIndex + 1).padStart(2, '0');
+                            const dayStr = String(day).padStart(2, '0');
+                            const result = `${year}-${month}-${dayStr}`;
+                            console.log('✓ Pattern 1a matched (Month Day, Year):', result);
+                            return result;
+                        }
+                    }
+                }
+                
+                // Try "30 June 2021" format
+                const format2 = /(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/i;
+                dateMatch = datePart.match(format2);
+                if (dateMatch) {
+                    const day = parseInt(dateMatch[1]);
+                    const monthName = dateMatch[2];
+                    const year = dateMatch[3];
+                    const monthIndex = findMonthIndex(monthName);
+                    if (monthIndex !== -1) {
+                        const month = String(monthIndex + 1).padStart(2, '0');
+                        const dayStr = String(day).padStart(2, '0');
+                        const result = `${year}-${month}-${dayStr}`;
+                        console.log('✓ Pattern 1b matched (Day Month Year):', result);
+                        return result;
+                    }
+                }
+            }
+            
+            // Pattern 2: "January 2010 to December 2020" or "Jan 2010 to Dec 2020" -> extract end date
+            const monthYearPattern = /(?:to|until|through|-)\s+([A-Za-z]+\s+\d{4})/i;
+            match = dateStr.match(monthYearPattern);
+            if (match) {
+                const monthYear = match[1].trim();
+                const parts = monthYear.toLowerCase().split(/\s+/);
+                const monthName = parts[0];
+                const year = parts[1];
+                
+                const monthIndex = findMonthIndex(monthName);
+                if (monthIndex !== -1 && year) {
+                    // Get last day of month
+                    const lastDay = new Date(parseInt(year), monthIndex + 1, 0).getDate();
+                    const month = String(monthIndex + 1).padStart(2, '0');
+                    const result = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+                    console.log('✓ Pattern 2 matched:', result);
+                    return result;
+                }
+            }
+            
+            // Pattern 3: "2010 to 2020" or "2010-2020" -> extract "2020" (use end of year)
+            const yearPattern = /(?:to|until|through|-)\s*(\d{4})\b/i;
+            match = dateStr.match(yearPattern);
+            if (match) {
+                const year = match[1];
+                const result = `${year}-12-31`;
+                console.log('✓ Pattern 3 matched:', result);
+                return result;
+            }
+            
+            // Pattern 4: "up to March 2021" or "through March 2021" -> extract "March 2021"
+            const upToPattern = /(?:up to|until|through)\s+([A-Za-z]+\s+\d{4})/i;
+            match = dateStr.match(upToPattern);
+            if (match) {
+                const monthYear = match[1].trim();
+                const parts = monthYear.toLowerCase().split(/\s+/);
+                const monthName = parts[0];
+                const year = parts[1];
+                
+                const monthIndex = findMonthIndex(monthName);
+                if (monthIndex !== -1 && year) {
+                    const lastDay = new Date(parseInt(year), monthIndex + 1, 0).getDate();
+                    const month = String(monthIndex + 1).padStart(2, '0');
+                    const result = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+                    console.log('✓ Pattern 4 matched:', result);
+                    return result;
+                }
+            }
+            
+            // Pattern 5: Just a year "2020" -> use end of year
+            const singleYearPattern = /^(\d{4})$/;
+            match = dateStr.match(singleYearPattern);
+            if (match) {
+                const result = `${match[1]}-12-31`;
+                console.log('✓ Pattern 5 matched:', result);
+                return result;
+            }
+            
+            // Pattern 6: "December 2020" or "2020-12" at the end -> extract it
+            const endMonthYearPattern = /([A-Za-z]+\s+\d{4})$/i;
+            match = dateStr.match(endMonthYearPattern);
+            if (match) {
+                const monthYear = match[1].trim();
+                const parts = monthYear.toLowerCase().split(/\s+/);
+                const monthName = parts[0];
+                const year = parts[1];
+                
+                const monthIndex = findMonthIndex(monthName);
+                if (monthIndex !== -1 && year) {
+                    const lastDay = new Date(parseInt(year), monthIndex + 1, 0).getDate();
+                    const month = String(monthIndex + 1).padStart(2, '0');
+                    const result = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+                    console.log('✓ Pattern 6 matched:', result);
+                    return result;
+                }
+            }
+            
+            console.warn('⚠️ No pattern matched for date range:', dateRange);
+            return null;
+        }
+
+        // AI-Powered Systematic Review Extraction
+        async function extractSystematicReview() {
+            const reviewText = document.getElementById('systematic-review-input').value.trim();
+            const statusDiv = document.getElementById('extraction-status');
+            const resultsDiv = document.getElementById('extraction-results');
+            const extractButton = document.getElementById('extract-button');
+            
+            // Validation
+            if (!reviewText) {
+                statusDiv.innerHTML = '<span style="color: red;">❌ Please paste systematic review text first.</span>';
+                return;
+            }
+            
+            if (reviewText.length < 100) {
+                statusDiv.innerHTML = '<span style="color: red;">❌ Text too short. Please paste the full systematic review content.</span>';
+                return;
+            }
+            
+            // Show loading state
+            if (extractButton) {
+                extractButton.disabled = true;
+                extractButton.style.opacity = '0.6';
+                extractButton.style.cursor = 'not-allowed';
+            }
+            statusDiv.innerHTML = '<span style="color: #007bff;">⏳ Analyzing systematic review with AI... This may take 10-30 seconds.</span>';
+            resultsDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/extract-systematic-review', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: reviewText })
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMsg = `HTTP error! status: ${response.status}`;
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMsg = errorData.error || errorMsg;
+                    } catch (e) {
+                        errorMsg = errorText || errorMsg;
+                    }
+                    throw new Error(errorMsg);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Extraction failed');
+                }
+                
+                // Track what was auto-filled for feedback
+                const autoFillFeedback = [];
+                
+                // Handle query selection (short or long)
+                // Store both queries for user selection
+                const shortQuery = data.short_query || null;
+                const longQuery = data.long_query || null;
+                
+                // Default to long query if available, otherwise short query
+                let selectedQuery = longQuery || shortQuery || null;
+                
+                // Auto-fill search query field with the default (long query preferred)
+                const queryInput = document.getElementById('query');
+                if (queryInput && selectedQuery) {
+                    queryInput.value = selectedQuery;
+                    autoFillFeedback.push('✓ Auto-filled Search Query (long version)');
+                } else if (queryInput && shortQuery) {
+                    queryInput.value = shortQuery;
+                    autoFillFeedback.push('✓ Auto-filled Search Query (short version)');
+                }
+                
+                // Auto-fill "Included Studies for Comparison" field with titles
+                // The textarea is inside a modal, so we store titles globally and set them when modal opens
+                const titlesTextarea = document.getElementById('pastedPapers');
+                console.log('Looking for pastedPapers textarea:', titlesTextarea);
+                console.log('Paper titles to fill:', data.included_paper_titles);
+                
+                if (data.included_paper_titles && data.included_paper_titles.length > 0) {
+                    // Store titles globally so they persist and can be restored when modal opens
+                    autoFilledTitles = data.included_paper_titles;
+                    const titlesText = data.included_paper_titles.join('\n');
+                    
+                    // Try to set the value immediately (works even if modal is hidden)
+                    if (titlesTextarea) {
+                        titlesTextarea.value = titlesText;
+                        titlesTextarea.setAttribute('data-auto-filled', 'true');
+                        titlesTextarea.setAttribute('data-titles-count', data.included_paper_titles.length.toString());
+                        
+                        // Trigger events
+                        titlesTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                        titlesTextarea.dispatchEvent(new Event('change', { bubbles: true }));
+                        
+                        console.log('✓ Set pastedPapers value directly:', titlesTextarea.value ? 'SUCCESS' : 'FAILED');
+                        console.log('✓ Value length:', titlesTextarea.value ? titlesTextarea.value.length : 0);
+                    }
+                    
+                    // Verify and provide feedback
+                    if (titlesTextarea && titlesTextarea.value && titlesTextarea.value.length > 0) {
+                        console.log('✓ Verified: pastedPapers field contains', titlesTextarea.value.length, 'characters');
+                        autoFillFeedback.push(`✓ Auto-filled "Check Papers" field with ${data.included_paper_titles.length} titles (click "📋 Check Papers & Select for Comparison" button below to view)`);
+                    } else {
+                        console.log('✓ Titles stored globally - will be restored when modal opens');
+                        autoFillFeedback.push(`✓ Auto-filled "Check Papers" field with ${data.included_paper_titles.length} titles (click "📋 Check Papers & Select for Comparison" button below to view)`);
+                    }
+                } else if (data.included_paper_titles && data.included_paper_titles.length === 0) {
+                    console.log('⚠️ No paper titles extracted');
+                    autoFilledTitles = null;
+                    autoFillFeedback.push('⚠️ No paper titles extracted - Included Studies field not filled');
+                } else {
+                    autoFilledTitles = null;
+                }
+                
+                // Auto-fill "Published Before" date field
+                // IMPORTANT: Expand Advanced Options first so the field is accessible
+                const advancedContent = document.getElementById('advancedContent');
+                const shouldExpand = advancedContent && !advancedContent.classList.contains('show');
+                
+                if (shouldExpand) {
+                    advancedContent.classList.add('show');
+                    const toggle = document.querySelector('.advanced-toggle');
+                    if (toggle) {
+                        toggle.textContent = '▲ Advanced Options';
+                    }
+                    console.log('✓ Expanded Advanced Options section');
+                    
+                    // Scroll to the date field to ensure it's visible
+                    setTimeout(() => {
+                        const dateField = document.getElementById('date_before');
+                        if (dateField) {
+                            dateField.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    }, 100);
+                }
+                
+                // Function to set the date value - with multiple retry attempts
+                const setDateValue = (attempt = 1, maxAttempts = 5) => {
+                    const dateBeforeInput = document.getElementById('date_before');
+                    console.log(`[Attempt ${attempt}] Looking for date_before input:`, dateBeforeInput);
+                    
+                    if (!dateBeforeInput) {
+                        if (attempt < maxAttempts) {
+                            console.log(`[Attempt ${attempt}] date_before not found, retrying in 100ms...`);
+                            setTimeout(() => setDateValue(attempt + 1, maxAttempts), 100);
+                            return;
+                        }
+                        console.error('❌ date_before input element not found after', maxAttempts, 'attempts!');
+                        autoFillFeedback.push('⚠️ Could not find Published Before field - please fill manually');
+                        return;
+                    }
+                    
+                    if (!data.date_range) {
+                        console.log('⚠️ No date range found in extraction');
+                        autoFillFeedback.push('⚠️ No date range found - Published Before field not filled');
+                        return;
+                    }
+                    
+                    const endDate = parseEndDate(data.date_range);
+                    console.log('Parsed end date:', endDate);
+                    
+                    if (!endDate) {
+                        console.warn('⚠️ Could not parse end date from:', data.date_range);
+                        autoFillFeedback.push(`⚠️ Could not parse end date from "${data.date_range}" - Published Before field not filled`);
+                        return;
+                    }
+                    
+                    // Ensure the input is visible and accessible
+                    if (dateBeforeInput.offsetParent === null) {
+                        console.log('⚠️ date_before input is not visible, waiting...');
+                        if (attempt < maxAttempts) {
+                            setTimeout(() => setDateValue(attempt + 1, maxAttempts), 100);
+                            return;
+                        }
+                    }
+                    
+                    // Set the value using multiple methods to ensure it sticks
+                    dateBeforeInput.value = endDate;
+                    dateBeforeInput.setAttribute('value', endDate);
+                    
+                    // Force the value using Object.defineProperty as a last resort
+                    try {
+                        Object.defineProperty(dateBeforeInput, 'value', {
+                            value: endDate,
+                            writable: true,
+                            configurable: true
+                        });
+                    } catch (e) {
+                        console.log('Could not use defineProperty:', e);
+                    }
+                    
+                    // Trigger events to ensure the value is recognized
+                    const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+                    const changeEvent = new Event('change', { bubbles: true, cancelable: true });
+                    dateBeforeInput.dispatchEvent(inputEvent);
+                    dateBeforeInput.dispatchEvent(changeEvent);
+                    
+                    // Use native events for better browser compatibility
+                    const nativeInputEvent = new InputEvent('input', { bubbles: true, cancelable: true });
+                    const nativeChangeEvent = new Event('change', { bubbles: true, cancelable: true });
+                    try {
+                        dateBeforeInput.dispatchEvent(nativeInputEvent);
+                        dateBeforeInput.dispatchEvent(nativeChangeEvent);
+                    } catch (e) {
+                        // InputEvent might not be available in all browsers
+                    }
+                    
+                    // Also trigger focus/blur to ensure browser recognizes the change
+                    dateBeforeInput.focus();
+                    setTimeout(() => {
+                        dateBeforeInput.blur();
+                        // Check value after blur
+                        checkDateValue(dateBeforeInput, endDate);
+                    }, 50);
+                    
+                    console.log('✓ Set date_before to', endDate);
+                    console.log('✓ date_before.value after setting:', dateBeforeInput.value);
+                    console.log('✓ date_before.getAttribute("value"):', dateBeforeInput.getAttribute('value'));
+                };
+                
+                // Function to verify and retry if needed
+                const checkDateValue = (dateInput, expectedDate, retryCount = 0) => {
+                    if (dateInput.value === expectedDate) {
+                        console.log('✓ Verified: date_before field contains', dateInput.value);
+                        autoFillFeedback.push(`✓ Auto-filled 'Published Before' to ${expectedDate}`);
+                    } else if (retryCount < 3) {
+                        console.warn(`⚠️ Value mismatch (retry ${retryCount + 1}/3). Expected:`, expectedDate, 'Got:', dateInput.value);
+                        // Try setting again
+                        dateInput.value = expectedDate;
+                        dateInput.setAttribute('value', expectedDate);
+                        dateInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+                        setTimeout(() => checkDateValue(dateInput, expectedDate, retryCount + 1), 100);
+                    } else {
+                        console.error('❌ Failed to set date after multiple attempts. Expected:', expectedDate, 'Got:', dateInput.value);
+                        autoFillFeedback.push(`⚠️ Auto-fill attempted but may not have worked. Please set 'Published Before' to ${expectedDate} manually.`);
+                    }
+                };
+                
+                // Use requestAnimationFrame to ensure DOM is ready, then set with delay
+                requestAnimationFrame(() => {
+                    if (shouldExpand) {
+                        // Wait longer if we expanded the section
+                        setTimeout(() => setDateValue(), 200);
+                    } else {
+                        // If already expanded, set with small delay
+                        setTimeout(() => setDateValue(), 50);
+                    }
+                });
+                
+                // Display inclusion/exclusion criteria if available
+                const criteriaSection = document.getElementById('criteria-section');
+                const researchAimDisplay = document.getElementById('research-aim-display');
+                const inclusionCriteriaDisplay = document.getElementById('inclusion-criteria-display');
+                const exclusionCriteriaDisplay = document.getElementById('exclusion-criteria-display');
+                
+                if (data.inclusion_criteria || data.exclusion_criteria || data.research_aim) {
+                    criteriaSection.style.display = 'block';
+                    
+                    // Store criteria globally for screening
+                    inclusionCriteria = data.inclusion_criteria || '';
+                    exclusionCriteria = data.exclusion_criteria || '';
+                    researchAim = data.research_aim || null;
+                    
+                    // Display research aim
+                    if (data.research_aim) {
+                        researchAimDisplay.value = data.research_aim;
+                        researchAimDisplay.style.borderColor = '#667eea';
+                    } else {
+                        researchAimDisplay.value = 'Not found in the article.';
+                        researchAimDisplay.style.borderColor = '#ffc107';
+                    }
+                    
+                    if (data.inclusion_criteria) {
+                        inclusionCriteriaDisplay.value = data.inclusion_criteria;
+                    } else {
+                        inclusionCriteriaDisplay.value = 'Not found in the article.';
+                        inclusionCriteriaDisplay.style.borderColor = '#ffc107';
+                    }
+                    
+                    if (data.exclusion_criteria) {
+                        exclusionCriteriaDisplay.value = data.exclusion_criteria;
+                    } else {
+                        exclusionCriteriaDisplay.value = 'Not found in the article.';
+                        exclusionCriteriaDisplay.style.borderColor = '#ffc107';
+                    }
+                    
+                    // Enable screening button if we have criteria and search results
+                    updateScreeningButtonState();
+                } else {
+                    criteriaSection.style.display = 'none';
+                    inclusionCriteria = null;
+                    exclusionCriteria = null;
+                    researchAim = null;
+                    updateScreeningButtonState();
+                }
+                
+                // Display extraction summary
+                let summaryHTML = '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">';
+                
+                summaryHTML += `
+                    <div style="padding: 12px; background: #e7f3ff; border-radius: 4px;">
+                        <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Search Dates</div>
+                        <div style="font-weight: bold; color: #333;">${data.date_range || 'Not found'}</div>
+                    </div>
+                `;
+                
+                summaryHTML += `
+                    <div style="padding: 12px; background: #e7f3ff; border-radius: 4px;">
+                        <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Papers Screened</div>
+                        <div style="font-weight: bold; color: #333;">${data.initial_papers_found !== null ? data.initial_papers_found.toLocaleString() : 'Not found'}</div>
+                    </div>
+                `;
+                
+                summaryHTML += `
+                    <div style="padding: 12px; background: #e7f3ff; border-radius: 4px;">
+                        <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Papers Included</div>
+                        <div style="font-weight: bold; color: #333;">${data.final_papers_included !== null ? data.final_papers_included : 'Not found'}</div>
+                    </div>
+                `;
+                
+                summaryHTML += `
+                    <div style="padding: 12px; background: #e7f3ff; border-radius: 4px;">
+                        <div style="font-size: 12px; color: #666; margin-bottom: 4px;">Titles Extracted</div>
+                        <div style="font-weight: bold; color: #333;">${data.included_paper_titles.length}</div>
+                    </div>
+                `;
+                
+                summaryHTML += '</div>';
+                
+                // Add PICO breakdown if available
+                if (data.pico_breakdown) {
+                    summaryHTML += `
+                        <div style="padding: 12px; background: #f0f0f0; border-radius: 4px; margin-bottom: 12px;">
+                            <div style="font-weight: bold; margin-bottom: 6px;">📋 PICO Breakdown:</div>
+                            <div style="font-size: 13px; line-height: 1.6; white-space: pre-wrap;">${data.pico_breakdown}</div>
+                        </div>
+                    `;
+                }
+                
+                // Add query options (short and/or long)
+                // Note: shortQuery and longQuery are already declared above (line 1446-1447)
+                // Just reuse them here - no need to redeclare
+                if (shortQuery || longQuery) {
+                    summaryHTML += `<div style="padding: 12px; background: #d4edda; border-radius: 4px; border: 1px solid #c3e6cb; margin-bottom: 12px;">`;
+                    summaryHTML += `<div style="font-weight: bold; margin-bottom: 10px; color: #155724;">🔍 Generated Search Queries:</div>`;
+                    
+                    if (shortQuery && longQuery) {
+                        // Both available - show selection buttons
+                        summaryHTML += `
+                            <div style="margin-bottom: 15px;">
+                                <div style="margin-bottom: 12px; padding: 10px; background: white; border-radius: 4px; border: 1px solid #ddd;">
+                                    <div style="font-weight: bold; color: #007bff; margin-bottom: 5px;">Short Query (10-15 words):</div>
+                                    <code style="background: #f8f9fa; padding: 8px 12px; border-radius: 3px; display: block; font-size: 13px; word-break: break-word; margin-bottom: 8px;">${escapeHtml(shortQuery)}</code>
+                                    <button onclick="selectQuery(${JSON.stringify(shortQuery)})" style="padding: 6px 15px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: bold;">Use Short Query</button>
+                                </div>
+                                <div style="padding: 10px; background: white; border-radius: 4px; border: 1px solid #ddd;">
+                                    <div style="font-weight: bold; color: #28a745; margin-bottom: 5px;">Long Query (30-50 words):</div>
+                                    <code style="background: #f8f9fa; padding: 8px 12px; border-radius: 3px; display: block; font-size: 13px; word-break: break-word; margin-bottom: 8px;">${escapeHtml(longQuery)}</code>
+                                    <button onclick="selectQuery(${JSON.stringify(longQuery)})" style="padding: 6px 15px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: bold;">Use Long Query</button>
+                                </div>
+                            </div>
+                        `;
+                    } else if (shortQuery) {
+                        // Only short available
+                        summaryHTML += `
+                            <div style="padding: 10px; background: white; border-radius: 4px; border: 1px solid #ddd;">
+                                <code style="background: #f8f9fa; padding: 8px 12px; border-radius: 3px; display: block; font-size: 14px; word-break: break-word; margin-bottom: 8px;">${escapeHtml(shortQuery)}</code>
+                                <button onclick="selectQuery(${JSON.stringify(shortQuery)})" style="padding: 6px 15px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: bold;">Use This Query</button>
+                            </div>
+                        `;
+                    } else if (longQuery) {
+                        // Only long available
+                        summaryHTML += `
+                            <div style="padding: 10px; background: white; border-radius: 4px; border: 1px solid #ddd;">
+                                <code style="background: #f8f9fa; padding: 8px 12px; border-radius: 3px; display: block; font-size: 14px; word-break: break-word; margin-bottom: 8px;">${escapeHtml(longQuery)}</code>
+                                <button onclick="selectQuery(${JSON.stringify(longQuery)})" style="padding: 6px 15px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; font-weight: bold;">Use This Query</button>
+                            </div>
+                        `;
+                    }
+                    
+                    summaryHTML += `</div>`;
+                }
+                
+                // Add auto-fill feedback
+                if (autoFillFeedback.length > 0) {
+                    summaryHTML += `
+                        <div style="padding: 12px; background: #e7f3ff; border-radius: 4px; border: 1px solid #b3d9ff; margin-top: 12px;">
+                            <div style="font-weight: bold; margin-bottom: 6px; color: #004085;">📝 Auto-Filled Fields:</div>
+                            <ul style="margin: 0; padding-left: 20px; color: #333;">
+                                ${autoFillFeedback.map(feedback => `<li style="margin: 4px 0;">${feedback}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                    
+                    // If date was parsed, add a clickable helper to set it manually if needed
+                    if (data.date_range) {
+                        const endDate = parseEndDate(data.date_range);
+                        if (endDate) {
+                            summaryHTML += `
+                                <div style="padding: 12px; background: #fff3cd; border-radius: 4px; border: 1px solid #ffc107; margin-top: 12px;">
+                                    <div style="font-weight: bold; margin-bottom: 6px; color: #856404;">📅 Date Helper:</div>
+                                    <div style="margin-bottom: 8px;">If "Published Before" field is not auto-filled, click below to set it:</div>
+                                    <button 
+                                        onclick="document.getElementById('date_before').value='${endDate}'; this.style.background='#28a745'; this.textContent='✓ Date Set!'; setTimeout(()=>this.style.background='#007bff', 2000);" 
+                                        style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;"
+                                    >
+                                        Set Published Before to ${endDate}
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+                
+                document.getElementById('extraction-summary').innerHTML = summaryHTML;
+                
+                // Display warnings if any
+                const warningsDiv = document.getElementById('extraction-warnings');
+                const warningsList = document.getElementById('warnings-list');
+                if (data.extraction_warnings && data.extraction_warnings.length > 0) {
+                    warningsList.innerHTML = data.extraction_warnings.map(w => `<li>${w}</li>`).join('');
+                    warningsDiv.style.display = 'block';
+                } else {
+                    warningsDiv.style.display = 'none';
+                }
+                
+                // Show results
+                resultsDiv.style.display = 'block';
+                statusDiv.innerHTML = '<span style="color: #28a745;">✅ Extraction complete! Review results below and scroll down to validate.</span>';
+                
+                // Scroll to results
+                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                
+            } catch (error) {
+                console.error('Extraction error:', error);
+                statusDiv.innerHTML = `<span style="color: red;">❌ Error: ${error.message}</span>`;
+                resultsDiv.style.display = 'none';
+            } finally {
+                // Always re-enable button, even if there was an error
+                if (extractButton) {
+                    extractButton.disabled = false;
+                    extractButton.style.opacity = '1';
+                    extractButton.style.cursor = 'pointer';
+                }
+            }
+        }
+
+        // Optional: Add keyboard shortcut (Ctrl+Enter to extract)
+        document.addEventListener('DOMContentLoaded', function() {
+            const reviewInput = document.getElementById('systematic-review-input');
+            if (reviewInput) {
+                reviewInput.addEventListener('keydown', function(e) {
+                    if (e.ctrlKey && e.key === 'Enter') {
+                        extractSystematicReview();
+                    }
+                });
+            }
+        });
+
+        // Update screening button state
+        function updateScreeningButtonState() {
+            const screenBtn = document.getElementById('screenWithAIBtn');
+            const hasCriteria = inclusionCriteria || exclusionCriteria;
+            const hasResults = currentResults && currentResults.results && currentResults.results.length > 0;
+            
+            if (screenBtn) {
+                if (hasCriteria && hasResults) {
+                    screenBtn.disabled = false;
+                    screenBtn.style.opacity = '1';
+                    screenBtn.style.cursor = 'pointer';
+                } else {
+                    screenBtn.disabled = true;
+                    screenBtn.style.opacity = '0.6';
+                    screenBtn.style.cursor = 'not-allowed';
+                }
+            }
+        }
+
+        // Screen papers with AI
+        async function screenWithAI() {
+            if (!inclusionCriteria && !exclusionCriteria) {
+                alert('Please extract inclusion/exclusion criteria first using the AI extraction feature.');
+                return;
+            }
+
+            if (!currentResults || !currentResults.results || currentResults.results.length === 0) {
+                alert('Please run a search first to get papers to screen.');
+                return;
+            }
+
+            const screenBtn = document.getElementById('screenWithAIBtn');
+            const resultsContainer = document.getElementById('resultsContainer');
+
+            // Disable button and show progress
+            screenBtn.disabled = true;
+            screenBtn.textContent = '⏳ Screening...';
+            
+            // Show progress in results container
+            resultsContainer.innerHTML = `
+                <div class="screening-progress" style="text-align: center; padding: 40px;">
+                    <div class="spinner" style="margin: 0 auto 20px;"></div>
+                    <h3>Screening papers with dual LLM approach...</h3>
+                    <p>This may take a few minutes. Processing ${currentResults.results.length} papers through GPT-4o-mini and GPT-5-mini.</p>
+                    <div class="progress-bar" style="max-width: 500px; margin: 20px auto;">
+                        <div class="progress-fill" id="screening-progress" style="width: 0%">0%</div>
+                    </div>
+                    <p id="screening-status">Initializing...</p>
+                </div>
+            `;
+            resultsContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            try {
+                // Prepare papers for screening
+                const papers = currentResults.results.map(r => ({
+                    pmid: r.pmid,
+                    title: r.title,
+                    abstract: r.abstract || ''
+                }));
+
+                // Update progress
+                const progressBar = document.getElementById('screening-progress');
+                const statusText = document.getElementById('screening-status');
+                statusText.textContent = `Sending ${papers.length} papers to screening API...`;
+
+                // Call screening API
+                const response = await fetch('/api/screen-papers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        papers: papers,
+                        inclusion_criteria: inclusionCriteria || '',
+                        exclusion_criteria: exclusionCriteria || '',
+                        research_aim: researchAim || null,
+                        max_workers: 5
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Screening failed');
+                }
+
+                // Store results
+                screeningResults = data;
+
+                // Build screening results map for quick lookup
+                screeningResultsMap = {};
+                if (data.results) {
+                    data.results.forEach(r => {
+                        screeningResultsMap[r.pmid] = r;
+                    });
+                }
+
+                // Re-display search results with screening info merged
+                if (currentResults) {
+                    displayResults(currentResults);
+                }
+
+                // Enable export button
+                document.getElementById('exportScreeningBtn').disabled = false;
+
+            } catch (error) {
+                console.error('Screening error:', error);
+                resultsContainer.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Screening Error</h4>
+                        <p>${error.message}</p>
+                        <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                            Please check that OpenAI API key is configured correctly.
+                        </p>
+                    </div>
+                `;
+            } finally {
+                screenBtn.disabled = false;
+                screenBtn.textContent = '🤖 Screen with AI';
+                updateScreeningButtonState();
+            }
+        }
+
+
+        // Export screening results
+        async function exportScreeningResults() {
+            if (!screeningResults) {
+                alert('No screening results to export. Please run screening first.');
+                return;
+            }
+
+            try {
+                // Create a map of PMID to search result data (for match, similarity, rank)
+                const searchResultsMap = {};
+                if (currentResults && currentResults.results) {
+                    currentResults.results.forEach((r, idx) => {
+                        searchResultsMap[r.pmid] = {
+                            is_match: r.is_match || false,
+                            similarity_score: r.similarity_score !== null && r.similarity_score !== undefined ? r.similarity_score : null,
+                            rank: r.original_rank || (idx + 1)
+                        };
+                    });
+                }
+
+                // Create CSV content
+                const headers = [
+                    'PMID', 'Title', 'Abstract', 
+                    'GPT-4o-mini Decision', 'GPT-4o-mini Confidence', 'GPT-4o-mini Reasoning',
+                    'GPT-5-mini Decision', 'GPT-5-mini Confidence', 'GPT-5-mini Reasoning',
+                    'Agreement', 'Final Category', 'Screening Decision',
+                    'Is Match', 'Similarity Score', 'Rank'
+                ];
+
+                const rows = screeningResults.results.map(r => {
+                    const searchData = searchResultsMap[r.pmid] || {};
+                    
+                    // Map final_category to Screening Decision
+                    let screeningDecision = 'Uncertain';
+                    if (r.final_category === 'include') {
+                        screeningDecision = 'Included';
+                    } else if (r.final_category === 'exclude') {
+                        screeningDecision = 'Excluded';
+                    } else if (r.final_category === 'disagreement' || r.final_category === 'uncertain' || r.final_category === 'error') {
+                        screeningDecision = 'Uncertain';
+                    }
+                    
+                    return [
+                        r.pmid,
+                        `"${(r.title || '').replace(/"/g, '""')}"`,
+                        `"${(r.abstract || '').replace(/"/g, '""')}"`,
+                        r.gpt4o_decision,
+                        r.gpt4o_confidence,
+                        `"${(r.gpt4o_reasoning || '').replace(/"/g, '""')}"`,
+                        r.gpt5mini_decision,
+                        r.gpt5mini_confidence,
+                        `"${(r.gpt5mini_reasoning || '').replace(/"/g, '""')}"`,
+                        r.agreement ? 'Yes' : 'No',
+                        r.final_category,
+                        screeningDecision,
+                        searchData.is_match ? 'Yes' : 'No',
+                        searchData.similarity_score !== null && searchData.similarity_score !== undefined 
+                            ? (searchData.similarity_score * 100).toFixed(2) + '%' 
+                            : 'N/A',
+                        searchData.rank || 'N/A'
+                    ];
+                });
+
+                const csvContent = [
+                    headers.join(','),
+                    ...rows.map(row => row.join(','))
+                ].join('\n');
+
+                // Create blob and download
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+                a.download = `screening_results_${timestamp}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+            } catch (error) {
+                alert('Error exporting screening results: ' + error.message);
+            }
+        }
+
+        // Arbitrate with GPT-5 supervisor
+        async function arbitrateWithGPT5(pmid) {
+            if (!screeningResults || !screeningResults.results) {
+                alert('No screening results available.');
+                return;
+            }
+
+            const screening = screeningResultsMap[pmid];
+            if (!screening) {
+                alert('Screening result not found for this paper.');
+                return;
+            }
+
+            if (!inclusionCriteria && !exclusionCriteria) {
+                alert('Inclusion/exclusion criteria not available. Please extract criteria first.');
+                return;
+            }
+
+            const btn = document.getElementById(`arbitrate-btn-${pmid}`);
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '⏳ Arbitrating...';
+            }
+
+            try {
+                const response = await fetch('/api/arbitrate-paper', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        pmid: pmid,
+                        title: screening.title || '',
+                        abstract: screening.abstract || '',
+                        inclusion_criteria: inclusionCriteria || '',
+                        exclusion_criteria: exclusionCriteria || '',
+                        research_aim: researchAim || null,
+                        gpt4o_mini_result: {
+                            decision: screening.gpt4o_decision,
+                            confidence: screening.gpt4o_confidence,
+                            reasoning: screening.gpt4o_reasoning
+                        },
+                        gpt5_mini_result: {
+                            decision: screening.gpt5mini_decision,
+                            confidence: screening.gpt5mini_confidence,
+                            reasoning: screening.gpt5mini_reasoning
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Arbitration failed');
+                }
+
+                // Update screening result with supervisor decision
+                screening.gpt5_supervisor_decision = data.final_decision;
+                screening.gpt5_supervisor_confidence = data.confidence;
+                screening.gpt5_supervisor_reasoning = data.supervisor_reasoning;
+                screening.gpt5_decisive_factors = data.decisive_factors;
+                screening.gpt5_reviewer_analysis = data.reviewer_analysis;
+                screening.gpt5_agrees_with_4o_mini = data.agrees_with_4o_mini;
+                screening.gpt5_agrees_with_5_mini = data.agrees_with_5_mini;
+                screening.supervision_successful = data.supervision_successful;
+
+                // Update final category based on supervisor decision
+                screening.final_category = data.final_decision;
+
+                // Update the screening results map
+                screeningResultsMap[pmid] = screening;
+
+                // Update the screening results array
+                const resultIndex = screeningResults.results.findIndex(r => r.pmid === pmid);
+                if (resultIndex !== -1) {
+                    screeningResults.results[resultIndex] = screening;
+                }
+
+                // Re-display results to show supervisor decision
+                if (currentResults) {
+                    displayResults(currentResults);
+                }
+
+                // Update filter counts
+                updateFilterCounts();
+
+            } catch (error) {
+                console.error('Arbitration error:', error);
+                alert('Error during arbitration: ' + error.message);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '⚖️ Arbitrate with GPT-5 Supervisor';
+                }
+            }
+        }
+
+        // Update screening button state after search completes
+        // This is handled in the performSearch function below
+    </script>
+</body>
+</html>
+
