@@ -80,15 +80,24 @@ class EmbeddingGenerator:
         return df
     
     def create_embedding_text(self, row: pd.Series) -> str:
-        """Create the text to embed (title + abstract, or just title if no abstract)"""
+        """Create the text to embed (title + abstract + MeSH terms)"""
         title = row['title'] if pd.notna(row['title']) else ""
         abstract = row['abstract'] if pd.notna(row['abstract']) and row['abstract'] != '' else ""
-        
+        mesh_terms = row['mesh_terms'] if pd.notna(row['mesh_terms']) and row['mesh_terms'] != '' else ""
+
+        # Combine title, abstract, and MeSH terms
+        # MeSH terms provide important domain keywords that improve semantic matching
+        parts = []
+        if title:
+            parts.append(title)
         if abstract:
-            return f"{title} {abstract}".strip()
-        else:
-            # Use just the title if no abstract
-            return title.strip()
+            parts.append(abstract)
+        if mesh_terms:
+            # MeSH terms are semicolon-separated, replace with spaces for better embedding
+            mesh_text = mesh_terms.replace(';', ' ')
+            parts.append(mesh_text)
+
+        return " ".join(parts).strip()
     
     def generate_embeddings(self, texts: List[str]) -> np.ndarray:
         """Generate embeddings for a list of texts"""

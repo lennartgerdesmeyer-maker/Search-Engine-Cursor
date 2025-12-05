@@ -17,7 +17,8 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent))
 from config.config import (
     DATA_DIR, LOG_DIR, METADATA_DB_PATH, EMBEDDING_MODEL,
-    DEFAULT_TOP_K, SIMILARITY_THRESHOLD, EXPORT_DIR
+    DEFAULT_TOP_K, SIMILARITY_THRESHOLD, EXPORT_DIR,
+    ENABLE_QUERY_CENTERING
 )
 from src.vector_index import VectorIndex
 from src.reranker import get_reranker
@@ -95,10 +96,10 @@ class SemanticSearchEngine:
             embedding = embedding / norm
         
         # Center and renormalize using the embedding mean
-        # ENABLED - Query centering matches how document embeddings are stored
+        # CONFIGURABLE via ENABLE_QUERY_CENTERING in config.py
         # Both queries and documents are centered to remove common "medical domain" component
-        # This improves similarity score differentiation
-        if self.embedding_mean is not None:
+        # This can improve score differentiation BUT may hurt precision for domain-specific queries
+        if ENABLE_QUERY_CENTERING and self.embedding_mean is not None:
             embedding_before_center = embedding.copy()
             similarity_to_mean = np.dot(embedding, self.embedding_mean)
             logger.debug(f"Query centering: similarity to mean before centering: {similarity_to_mean:.4f}")
@@ -110,7 +111,9 @@ class SemanticSearchEngine:
                 embedding = embedding / norm
             logger.debug(f"Query embedding after centering - norm: {norm:.4f}, "
                         f"min: {embedding.min():.4f}, max: {embedding.max():.4f}, mean: {embedding.mean():.4f}")
-            logger.debug("Query centering enabled - matches centered document embeddings")
+            logger.info("Query centering ENABLED - matches centered document embeddings")
+        else:
+            logger.info("Query centering DISABLED - using original embeddings")
         
         logger.debug(f"Final query embedding - norm: {np.linalg.norm(embedding):.4f}, "
                     f"min: {embedding.min():.4f}, max: {embedding.max():.4f}, mean: {embedding.mean():.4f}")

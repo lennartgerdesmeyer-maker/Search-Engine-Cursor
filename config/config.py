@@ -270,7 +270,13 @@ DEFAULT_TOP_K = 1000
 
 MAX_TOP_K = 10000  # Increased from 5000 to allow more results for better recall
 
-SIMILARITY_THRESHOLD = 0.05  # Lower from 0.1 to 0.05 for better recall
+SIMILARITY_THRESHOLD = 0.15  # Increased from 0.05 to filter out low-quality matches
+# Note: With centering disabled, scores are higher, so threshold can be increased
+
+# Query centering: Subtracts embedding mean from queries to match centered documents
+# ISSUE: Can reduce similarity scores for domain-specific queries
+# RECOMMENDATION: Try disabling if getting poor results for relevant papers
+ENABLE_QUERY_CENTERING = False  # Set to False to disable centering (better results)
 
 # Validation mode settings (for maximum recall when validating against known studies)
 VALIDATION_MODE = {
