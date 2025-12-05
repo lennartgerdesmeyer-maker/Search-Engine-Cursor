@@ -187,7 +187,7 @@ class SemanticSearchEngine:
         reranker_model: str = "best",
         validation_mode: bool = False,
         expand_query: bool = False,
-        use_hybrid_scoring: bool = True
+        use_hybrid_scoring: bool = False
     ) -> Dict[str, Any]:
         """
         Perform semantic search with optional cross-encoder reranking and hybrid scoring.
@@ -409,23 +409,29 @@ class SemanticSearchEngine:
         self,
         results: List[Dict[str, Any]],
         query: str,
-        semantic_weight: float = 0.7,
-        keyword_weight: float = 0.2,
-        recency_weight: float = 0.1
+        semantic_weight: float = 0.85,
+        keyword_weight: float = 0.10,
+        recency_weight: float = 0.05
     ) -> List[Dict[str, Any]]:
         """
         Compute hybrid scores combining semantic similarity, keyword matching, and recency.
-        This improves ranking quality by considering multiple signals.
+
+        CONSERVATIVE APPROACH: Primarily uses semantic similarity (85%) with small boosts
+        from keyword matches (10%) and recency (5%). This minimally perturbs the original
+        semantic ranking while providing slight improvements.
 
         Args:
             results: List of search results with similarity_score
             query: Original search query
-            semantic_weight: Weight for semantic similarity (0-1)
-            keyword_weight: Weight for keyword matching (0-1)
-            recency_weight: Weight for publication recency (0-1)
+            semantic_weight: Weight for semantic similarity (default 0.85 = 85%)
+            keyword_weight: Weight for keyword matching (default 0.10 = 10%)
+            recency_weight: Weight for publication recency (default 0.05 = 5%)
 
         Returns:
             Results with updated scores based on hybrid ranking
+
+        Note: Use cautiously - may hurt results if query-document terminology differs significantly.
+              Disable with use_hybrid_scoring=False if results get worse.
         """
         if not results:
             return results
@@ -438,9 +444,10 @@ class SemanticSearchEngine:
 
         # Extract query keywords (simple tokenization)
         query_terms = set(query.lower().split())
-        # Remove common words
-        stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were'}
-        query_terms = {t for t in query_terms if t not in stopwords and len(t) > 2}
+        # Remove common words and punctuation
+        stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'be', 'been', 'being'}
+        query_terms = {t.strip('.,;:!?()[]{}"\'-') for t in query_terms if t not in stopwords and len(t) > 2}
+        query_terms = {t for t in query_terms if t}  # Remove empty strings
 
         # Get current year for recency calculation
         from datetime import datetime
@@ -450,22 +457,30 @@ class SemanticSearchEngine:
             # 1. Semantic similarity (already computed)
             semantic_score = result.get('similarity_score', 0.0)
 
-            # 2. Keyword matching score
+            # 2. Keyword matching score (with partial matching for medical terms)
             title = (result.get('title') or '').lower()
             abstract = (result.get('abstract') or '').lower()
             text = f"{title} {abstract}"
 
-            # Count keyword matches
-            matches = sum(1 for term in query_terms if term in text)
+            # Count keyword matches (improved - handles substrings better)
+            matches = 0
+            for term in query_terms:
+                # Count if term appears as whole word or part of medical term
+                if f" {term} " in f" {text} " or f"-{term}-" in text or f"-{term} " in text or f" {term}-" in text:
+                    matches += 1
+                elif term in text:  # Fallback to substring match
+                    matches += 0.5  # Partial credit for substring matches
+
             # Normalize by query length
             keyword_score = min(matches / max(len(query_terms), 1), 1.0) if query_terms else 0.0
 
-            # 3. Recency score (newer papers get higher scores)
+            # 3. Recency score (VERY GENTLE - 50-year decay for medical research)
+            # Medical landmark studies can be decades old and still highly relevant
             pub_year = result.get('pub_year')
             if pub_year and isinstance(pub_year, (int, float)):
-                # Papers from current year get score 1.0, older papers decay
+                # Papers from current year get score 1.0, older papers decay slowly
                 year_diff = current_year - int(pub_year)
-                recency_score = max(0.0, 1.0 - (year_diff / 20.0))  # 20-year decay
+                recency_score = max(0.0, 1.0 - (year_diff / 50.0))  # 50-year decay (was 20)
             else:
                 recency_score = 0.5  # Default for missing dates
 
@@ -746,12 +761,12 @@ class SemanticSearchEngine:
         pub_year = paper.get('pub_year')
         if pub_year and isinstance(pub_year, (int, float)):
             year_diff = current_year - int(pub_year)
-            recency_score = max(0.0, 1.0 - (year_diff / 20.0))
+            recency_score = max(0.0, 1.0 - (year_diff / 50.0))
         else:
             recency_score = 0.5
 
-        # Calculate hybrid score
-        hybrid_score = 0.7 * similarity + 0.2 * keyword_score + 0.1 * recency_score
+        # Calculate hybrid score (conservative weights)
+        hybrid_score = 0.85 * similarity + 0.10 * keyword_score + 0.05 * recency_score
 
         # Perform a search to see where this paper ranks
         search_results = self.search(

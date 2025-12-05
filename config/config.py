@@ -270,12 +270,12 @@ DEFAULT_TOP_K = 1000
 
 MAX_TOP_K = 10000  # Increased from 5000 to allow more results for better recall
 
-SIMILARITY_THRESHOLD = 0.10  # Balanced threshold: 0.05 was too permissive, 0.10 filters weak matches
+SIMILARITY_THRESHOLD = 0.05  # Lower threshold for better recall (can adjust higher if too many irrelevant results)
 
 # Recommended thresholds for different use cases:
 # - High precision: 0.20-0.30 (fewer results, more relevant)
-# - Balanced: 0.10-0.15 (default)
-# - High recall: 0.05 (more results, some irrelevant)
+# - Balanced: 0.10-0.15
+# - High recall: 0.05 (default - more results, some irrelevant)
 
 # Validation mode settings (for maximum recall when validating against known studies)
 VALIDATION_MODE = {
