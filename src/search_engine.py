@@ -75,13 +75,51 @@ class SemanticSearchEngine:
             self.model = SentenceTransformer(EMBEDDING_MODEL)
             logger.info("Model loaded")
     
-    def encode_query(self, query: str) -> np.ndarray:
-        """Encode a search query into an embedding vector"""
+    def expand_query(self, query: str, add_context: bool = True) -> str:
+        """
+        Expand query with medical context and related terms.
+        This helps capture papers that use different terminology.
+
+        Args:
+            query: Original search query
+            add_context: Whether to add biomedical context
+
+        Returns:
+            Expanded query string
+        """
+        expanded_parts = [query]
+
+        # Add biomedical context if requested
+        if add_context:
+            # Add general medical research context
+            context = "clinical trial randomized controlled study systematic review meta-analysis"
+            expanded_parts.append(context)
+
+        expanded_query = " ".join(expanded_parts)
+        logger.info(f"Query expansion: {len(query)} -> {len(expanded_query)} chars")
+
+        return expanded_query
+
+    def encode_query(self, query: str, expand: bool = False) -> np.ndarray:
+        """
+        Encode a search query into an embedding vector.
+
+        Args:
+            query: Search query string
+            expand: Whether to expand query with related terms (improves recall)
+
+        Returns:
+            Normalized query embedding vector
+        """
         self._load_model()
-        
+
+        # Optionally expand query
+        if expand:
+            query = self.expand_query(query, add_context=True)
+
         # Log the query being encoded
         logger.info(f"Encoding query: '{query[:100]}...' (length: {len(query)})")
-        
+
         # Encode with normalization
         embedding = self.model.encode(query, normalize_embeddings=True)
         
@@ -121,43 +159,19 @@ class SemanticSearchEngine:
         """Fetch metadata for a list of PMIDs"""
         if not pmids:
             return {}
-        
+
         conn = sqlite3.connect(self.db_path)
         placeholders = ','.join(['?' for _ in pmids])
         query = f"SELECT * FROM articles WHERE pmid IN ({placeholders})"
-        
+
         df = pd.read_sql_query(query, conn, params=pmids)
         conn.close()
-        
+
         metadata = {}
         for _, row in df.iterrows():
             metadata[row['pmid']] = row.to_dict()
-        
+
         return metadata
-    
-    def _ensure_initialized(self):
-        """Lazy initialization - only load index and mean when actually needed"""
-        if self._initialized:
-            return
-        
-        try:
-            logger.info("Initializing search engine (loading FAISS index and mean vector)...")
-            self.vector_index.build_index()
-            # Load embedding mean for query centering
-            mean_path = DATA_DIR / "embedding_mean.npy"
-            if mean_path.exists():
-                self.embedding_mean = np.load(mean_path)
-                logger.info("Loaded embedding mean for query centering")
-            else:
-                logger.warning("Embedding mean not found - query centering disabled")
-                self.embedding_mean = None
-            self._initialized = True
-            logger.info("Search engine initialized successfully")
-        except Exception as e:
-            logger.error(f"Error building/loading vector index: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
-            raise
     
     def search(
         self,
@@ -171,11 +185,13 @@ class SemanticSearchEngine:
         use_reranker: bool = False,
         faiss_candidates: int = 100,
         reranker_model: str = "best",
-        validation_mode: bool = False
+        validation_mode: bool = False,
+        expand_query: bool = False,
+        use_hybrid_scoring: bool = True
     ) -> Dict[str, Any]:
         """
-        Perform semantic search with optional cross-encoder reranking.
-        
+        Perform semantic search with optional cross-encoder reranking and hybrid scoring.
+
         Args:
             query: Search query string
             top_k: Number of final results to return
@@ -187,6 +203,8 @@ class SemanticSearchEngine:
             use_reranker: Whether to apply cross-encoder reranking
             faiss_candidates: Number of candidates to retrieve from FAISS when reranking
                              (should be > top_k when using reranker)
+            expand_query: Whether to expand query with related terms (improves recall)
+            use_hybrid_scoring: Whether to use hybrid scoring (semantic + keyword + recency)
         """
         # Lazy initialization - only load FAISS index when first search is performed
         self._ensure_initialized()
@@ -204,8 +222,8 @@ class SemanticSearchEngine:
             use_reranker = VALIDATION_MODE["use_reranker"]
             faiss_candidates = VALIDATION_MODE["faiss_candidates"]
             logger.info("Validation mode enabled: using maximum recall settings")
-        
-        query_embedding = self.encode_query(query)
+
+        query_embedding = self.encode_query(query, expand=expand_query)
         
         # Create a fingerprint of the query embedding for comparison
         query_fingerprint = hash(tuple(query_embedding[:10]))  # Hash first 10 values
@@ -341,7 +359,14 @@ class SemanticSearchEngine:
                 logger.error(f"Error during reranking: {e}")
                 # Fall back to original results if reranking fails
                 filtered_results = filtered_results[:top_k]
-        
+
+        # Apply hybrid scoring if enabled (combines semantic, keyword, and recency)
+        # This happens AFTER reranking to benefit from both signals
+        if use_hybrid_scoring and filtered_results and not use_reranker:
+            # Only apply hybrid scoring if NOT using reranker (avoid double-ranking)
+            filtered_results = self.compute_hybrid_scores(filtered_results, query)
+            logger.info("Applied hybrid scoring to improve ranking quality")
+
         match_stats = None
         if include_pmids_set and len(include_pmids_set) > 0:
             # Ensure all PMIDs are strings for consistent comparison
@@ -380,6 +405,94 @@ class SemanticSearchEngine:
             "search_time_ms": round(search_time, 2)
         }
     
+    def compute_hybrid_scores(
+        self,
+        results: List[Dict[str, Any]],
+        query: str,
+        semantic_weight: float = 0.7,
+        keyword_weight: float = 0.2,
+        recency_weight: float = 0.1
+    ) -> List[Dict[str, Any]]:
+        """
+        Compute hybrid scores combining semantic similarity, keyword matching, and recency.
+        This improves ranking quality by considering multiple signals.
+
+        Args:
+            results: List of search results with similarity_score
+            query: Original search query
+            semantic_weight: Weight for semantic similarity (0-1)
+            keyword_weight: Weight for keyword matching (0-1)
+            recency_weight: Weight for publication recency (0-1)
+
+        Returns:
+            Results with updated scores based on hybrid ranking
+        """
+        if not results:
+            return results
+
+        # Normalize weights
+        total_weight = semantic_weight + keyword_weight + recency_weight
+        semantic_weight /= total_weight
+        keyword_weight /= total_weight
+        recency_weight /= total_weight
+
+        # Extract query keywords (simple tokenization)
+        query_terms = set(query.lower().split())
+        # Remove common words
+        stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were'}
+        query_terms = {t for t in query_terms if t not in stopwords and len(t) > 2}
+
+        # Get current year for recency calculation
+        from datetime import datetime
+        current_year = datetime.now().year
+
+        for result in results:
+            # 1. Semantic similarity (already computed)
+            semantic_score = result.get('similarity_score', 0.0)
+
+            # 2. Keyword matching score
+            title = (result.get('title') or '').lower()
+            abstract = (result.get('abstract') or '').lower()
+            text = f"{title} {abstract}"
+
+            # Count keyword matches
+            matches = sum(1 for term in query_terms if term in text)
+            # Normalize by query length
+            keyword_score = min(matches / max(len(query_terms), 1), 1.0) if query_terms else 0.0
+
+            # 3. Recency score (newer papers get higher scores)
+            pub_year = result.get('pub_year')
+            if pub_year and isinstance(pub_year, (int, float)):
+                # Papers from current year get score 1.0, older papers decay
+                year_diff = current_year - int(pub_year)
+                recency_score = max(0.0, 1.0 - (year_diff / 20.0))  # 20-year decay
+            else:
+                recency_score = 0.5  # Default for missing dates
+
+            # Combine scores
+            hybrid_score = (
+                semantic_weight * semantic_score +
+                keyword_weight * keyword_score +
+                recency_weight * recency_score
+            )
+
+            # Store component scores for debugging
+            result['hybrid_score'] = hybrid_score
+            result['keyword_match_score'] = keyword_score
+            result['recency_score'] = recency_score
+            result['original_semantic_score'] = semantic_score
+
+        # Sort by hybrid score
+        results.sort(key=lambda x: x.get('hybrid_score', 0.0), reverse=True)
+
+        # Update similarity_score to reflect hybrid score (for API compatibility)
+        for result in results:
+            result['similarity_score'] = result['hybrid_score']
+
+        logger.info(f"Applied hybrid scoring: semantic={semantic_weight:.2f}, keyword={keyword_weight:.2f}, recency={recency_weight:.2f}")
+
+        return results
+
     def apply_keyword_ranking(
         self,
         results: List[Dict[str, Any]],
@@ -569,55 +682,180 @@ class SemanticSearchEngine:
         logger.info(f"Results exported to {filepath}")
         return str(filepath)
     
+    def diagnose_paper_ranking(
+        self,
+        query: str,
+        pmid: str,
+        expand_query: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Diagnose why a specific paper is ranked low or missing from results.
+        Useful for understanding search behavior and debugging.
+
+        Args:
+            query: Search query
+            pmid: PMID of the paper to analyze
+            expand_query: Whether to use query expansion
+
+        Returns:
+            Dictionary with diagnostic information
+        """
+        self._ensure_initialized()
+        self._load_model()
+
+        # Get paper metadata
+        metadata = self.get_article_metadata([pmid])
+        if not metadata or pmid not in metadata:
+            return {"error": f"PMID {pmid} not found in database"}
+
+        paper = metadata[pmid]
+
+        # Encode query
+        query_embedding = self.encode_query(query, expand=expand_query)
+
+        # Load embeddings if needed
+        if self.vector_index.embeddings is None:
+            self.vector_index.embeddings = np.load(self.vector_index.embeddings_path).astype('float32')
+
+        # Find paper's embedding
+        pmid_to_index = {p: idx for idx, p in enumerate(self.vector_index.pmid_list)}
+        if pmid not in pmid_to_index:
+            return {"error": f"PMID {pmid} not in embedding index"}
+
+        idx = pmid_to_index[pmid]
+        paper_embedding = self.vector_index.embeddings[idx]
+
+        # Calculate similarity
+        similarity = float(np.dot(query_embedding.flatten(), paper_embedding.flatten()))
+
+        # Extract query keywords
+        query_terms = set(query.lower().split())
+        stopwords = {'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were'}
+        query_terms = {t for t in query_terms if t not in stopwords and len(t) > 2}
+
+        # Calculate keyword match
+        title = (paper.get('title') or '').lower()
+        abstract = (paper.get('abstract') or '').lower()
+        text = f"{title} {abstract}"
+        matched_keywords = [term for term in query_terms if term in text]
+        keyword_score = len(matched_keywords) / max(len(query_terms), 1) if query_terms else 0.0
+
+        # Calculate recency score
+        from datetime import datetime
+        current_year = datetime.now().year
+        pub_year = paper.get('pub_year')
+        if pub_year and isinstance(pub_year, (int, float)):
+            year_diff = current_year - int(pub_year)
+            recency_score = max(0.0, 1.0 - (year_diff / 20.0))
+        else:
+            recency_score = 0.5
+
+        # Calculate hybrid score
+        hybrid_score = 0.7 * similarity + 0.2 * keyword_score + 0.1 * recency_score
+
+        # Perform a search to see where this paper ranks
+        search_results = self.search(
+            query=query,
+            top_k=2000,
+            min_similarity=0.0,  # No threshold
+            expand_query=expand_query,
+            use_hybrid_scoring=True
+        )
+
+        # Find paper's rank
+        rank = None
+        for i, result in enumerate(search_results['results'], 1):
+            if str(result['pmid']) == str(pmid):
+                rank = i
+                break
+
+        return {
+            "pmid": pmid,
+            "title": paper.get('title', '')[:100] + '...',
+            "pub_year": pub_year,
+            "semantic_similarity": round(similarity, 4),
+            "keyword_match_score": round(keyword_score, 4),
+            "matched_keywords": matched_keywords,
+            "recency_score": round(recency_score, 4),
+            "hybrid_score": round(hybrid_score, 4),
+            "rank": rank if rank else f"Not in top {len(search_results['results'])}",
+            "total_results": search_results['total_results'],
+            "diagnosis": self._generate_diagnosis(similarity, keyword_score, rank, len(search_results['results']))
+        }
+
+    def _generate_diagnosis(self, similarity: float, keyword_score: float, rank: Optional[int], total: int) -> str:
+        """Generate human-readable diagnosis of ranking issues."""
+        issues = []
+
+        if similarity < 0.15:
+            issues.append("Very low semantic similarity - paper content may not match query semantically")
+        elif similarity < 0.25:
+            issues.append("Low semantic similarity - consider using different query terms")
+
+        if keyword_score < 0.3:
+            issues.append("Few keyword matches - paper may use different terminology")
+
+        if rank and rank > 100:
+            issues.append(f"Ranked at position {rank} - poor ranking likely due to low scores")
+        elif rank and rank > 20:
+            issues.append(f"Ranked at position {rank} - moderate ranking, could be improved")
+        elif not rank:
+            issues.append(f"Not in top {total} results - scores are too low")
+
+        if not issues:
+            return "Paper has good scores and ranking"
+
+        return "; ".join(issues)
+
     def _analyze_missed_papers(self, included_pmids: List[str], raw_results: List[Tuple[str, float]], min_similarity: float):
         """Analyze why included papers were missed."""
         if not included_pmids or self.last_query_embedding is None:
             return
-        
+
         result_pmids = {str(r[0]) for r in raw_results}
         missed_pmids = [str(pmid) for pmid in included_pmids if str(pmid) not in result_pmids]
-        
+
         if not missed_pmids:
             logger.info("All included papers found in search results")
             return
-        
+
         logger.warning(f"Analyzing {len(missed_pmids)} missed papers...")
-        
+
         # Load embeddings if needed
         if self.vector_index.embeddings is None:
             self.vector_index.embeddings = np.load(self.vector_index.embeddings_path).astype('float32')
-        
+
         # Create PMID to index mapping
         pmid_to_index = {pmid: idx for idx, pmid in enumerate(self.vector_index.pmid_list)}
-        
+
         for pmid in missed_pmids[:10]:  # Analyze first 10 missed
             if pmid not in pmid_to_index:
                 logger.warning(f"  PMID {pmid}: NOT IN DATABASE")
                 continue
-            
+
             # Get its embedding index
             idx = pmid_to_index[pmid]
-            
+
             try:
                 # Calculate its similarity to the query
                 paper_embedding = self.vector_index.embeddings[idx]
-                
+
                 # Ensure both are 1D arrays with matching shapes
                 query_vec = np.asarray(self.last_query_embedding).flatten()
                 paper_vec = np.asarray(paper_embedding).flatten()
-                
+
                 # Check shapes match
                 if query_vec.shape[0] != paper_vec.shape[0]:
                     logger.warning(f"  PMID {pmid}: Shape mismatch (query: {query_vec.shape}, paper: {paper_vec.shape}), skipping")
                     continue
-                
+
                 similarity = np.dot(query_vec, paper_vec)
                 # Convert to Python float
                 similarity = float(similarity.item() if hasattr(similarity, 'item') else similarity)
             except Exception as e:
                 logger.warning(f"  PMID {pmid}: Error calculating similarity - {e}")
                 continue
-            
+
             # Determine reason for exclusion
             if similarity < min_similarity:
                 logger.warning(f"  PMID {pmid}: similarity={similarity:.4f} ({similarity*100:.1f}%) - Excluded by threshold ({min_similarity})")
